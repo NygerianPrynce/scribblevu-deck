@@ -345,6 +345,8 @@
   .st7 .th.ask .q { position: absolute; right: 8%; top: 16%; max-width: 52%; padding: 8px 12px; border-radius: 14px; background: #fff; box-shadow: 0 0 0 2px #2B3A67;
     font: 700 22px/1.05 var(--hand); color: #2B3A67; }
   body.portrait .st7 .th.ask .q { font-size: 24px; }
+  .probL2 { margin-top: 34px; font-size: 76px; }
+  body.portrait .probL2 { margin-top: 44px; font-size: 92px; }
   /* landscape-only "More" slides shown on a phone held upright */
   #rotate { position: fixed; left: 50%; top: 18px; transform: translateX(-50%); padding: 8px 14px; border-radius: 999px; background: rgba(250,248,243,.95); color: var(--ink);
     font: 800 13px var(--body); z-index: 101; display: none; white-space: nowrap; }
@@ -500,11 +502,12 @@
     <img class="scrib sv" src="assets/scrib_surprised.png" alt="">
     <div class="mf">
       <div class="ey">THE PROBLEM</div>
-      <div class="mh" id="probH"><span class="l1">The number of students learning from home has increased by <span class="hot">41%</span> in 4 years.</span> <span class="l2">None of those students get to experience the classroom.</span></div>
+      <div class="mh" id="probH"><span class="l1">The number of students learning from home has increased by <span class="hot">41%</span> in 4 years.</span></div>
       <div class="pics">
         <div class="pic home" id="picHome"><img src="assets/photo_home.jpg" alt="A kid alone at a laptop in a remote class"><span class="lbl">AT HOME</span><span class="credit">Thomas Park / Unsplash</span></div>
         <div class="pic inlab" id="picLab"><img src="assets/photo_lab_color.jpg" alt="Kids crowded around a 3D printer in a classroom lab"><span class="lbl">IN THE LAB</span><span class="credit">Adam Winger / Unsplash</span></div>
       </div>
+      <div class="mh probL2" id="probL2"><span class="l2">None of those students get to experience the classroom.</span></div>
       <div class="srcline" id="srcline">Source: NCES, 2023</div>
     </div>
   </section>
@@ -978,7 +981,8 @@
       tl.fromTo(`${id} img`, { scale: 1.15 }, { scale: 1, duration: 1.6, ease: "power2.out" }, .7 + i * .25);
     });
     tl.fromTo("#probH .hot", { scale: 1 }, { scale: 1.18, duration: .18, yoyo: true, repeat: 1, transformOrigin: "50% 60%" }, 1.4);
-    tl.from("#srcline", { autoAlpha: 0, y: 14, duration: .5 }, 1.5);
+    tl.fromTo("#probL2", { autoAlpha: 0, y: 24 }, { autoAlpha: 1, y: 0, duration: .6, ease: "power3.out" }, 1.4);
+    tl.from("#srcline", { autoAlpha: 0, y: 14, duration: .5 }, 1.7);
     stops.push(tl.duration());
     return { tl, stops };
   }
