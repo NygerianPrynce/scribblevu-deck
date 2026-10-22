@@ -1,0 +1,1354 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ScribbleVu: turn any lesson into a lab students step inside</title>
+<meta name="description" content="ScribbleVu turns any lesson into a hands-on lab students step inside, with an AI guide that rebuilds the room around their questions. 3rd place, HackTN 2026, built on Oracle Cloud.">
+<meta name="theme-color" content="#14182B">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ScribbleVu">
+<meta property="og:title" content="ScribbleVu: turn any lesson into a lab students step inside">
+<meta property="og:description" content="A student builds a wheel, races it, loses, and asks why. The AI tutor rebuilds the room around the question. 3rd place, HackTN 2026 · built on Oracle Cloud.">
+<meta property="og:url" content="https://nygerianprynce.github.io/scribblevu-deck/">
+<meta property="og:image" content="https://nygerianprynce.github.io/scribblevu-deck/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="627">
+<meta property="og:image:alt" content="ScribbleVu: turn any lesson into a lab students step inside. 3rd place, HackTN 2026.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://nygerianprynce.github.io/scribblevu-deck/og.png">
+<link rel="preload" href="fonts/caveat-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+  @font-face { font-family: "Caveat"; font-weight: 600; src: url(fonts/caveat-latin-600-normal.woff2) format("woff2"); }
+  @font-face { font-family: "Caveat"; font-weight: 700; src: url(fonts/caveat-latin-700-normal.woff2) format("woff2"); }
+  @font-face { font-family: "Nunito"; font-weight: 400; src: url(fonts/nunito-latin-400-normal.woff2) format("woff2"); }
+  @font-face { font-family: "Nunito"; font-weight: 600; src: url(fonts/nunito-latin-600-normal.woff2) format("woff2"); }
+  @font-face { font-family: "Nunito"; font-weight: 700; src: url(fonts/nunito-latin-700-normal.woff2) format("woff2"); }
+  @font-face { font-family: "Nunito"; font-weight: 800; src: url(fonts/nunito-latin-800-normal.woff2) format("woff2"); }
+  @font-face { font-family: "Nunito"; font-weight: 900; src: url(fonts/nunito-latin-900-normal.woff2) format("woff2"); }
+
+  :root {
+    /* ScribbleVu tokens (pitch brief "Look and feel") */
+    --paper: #FAF8F3; --grid: #DCE3EC; --grid-major: #C9D3E0; --ink: #2B3A67; --quiet: #6B7591;
+    --blue: #4F6BED; --blue-soft: #E8ECFD; --coral: #F28B66; --orange: #F4A261; --green: #3DBE7A; --green-ink: #2E9E63;
+    --sticky: #FFE38A; --pink: #F7A1C4; --chalk: #2F4A3A; --lens: #1E2130; --oracle: #C74634;
+    --hand: "Caveat", "Bradley Hand", cursive;
+    --body: "Nunito", "SF Pro Rounded", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #14182B; overflow: hidden; overscroll-behavior: none; touch-action: manipulation; }
+  body.still { background: var(--paper); }
+  body.still #nav, body.still #hint, body.still #progress, body.still #rotate { display: none !important; }
+  body { font-family: var(--body); color: var(--ink); -webkit-font-smoothing: antialiased; }
+  body.idle { cursor: none; }
+
+  #stage { position: fixed; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; overflow: hidden; background: var(--paper); }
+  .slide { position: absolute; inset: 0; visibility: hidden; overflow: hidden; background: var(--paper); }
+  .slide.on { visibility: visible; }
+  .gridbg {
+    position: absolute; inset: 0; opacity: .55;
+    background-image:
+      linear-gradient(var(--grid-major) 1px, transparent 1px), linear-gradient(90deg, var(--grid-major) 1px, transparent 1px),
+      linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 200px 200px, 200px 200px, 40px 40px, 40px 40px; background-position: -1px -1px;
+  }
+  #grain {
+    position: absolute; inset: -50%; pointer-events: none; z-index: 50; opacity: .05; mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+
+  /* shared type */
+  .brand { position: absolute; left: 120px; top: 52px; font: 700 48px/1 var(--hand); color: var(--ink); }
+  .brand b, .logo b { color: var(--blue); font-weight: 700; }
+  .eyebrow { position: absolute; left: 124px; top: 150px; font: 900 22px var(--body); letter-spacing: 5px; color: var(--quiet); }
+  .eyebrow i { font-style: normal; color: var(--blue); }
+  .h { position: absolute; left: 118px; top: 178px; font: 700 112px/.98 var(--hand); color: var(--ink); white-space: nowrap; }
+  .h .l2 { color: var(--blue); }
+  .h .coral { color: var(--coral); }
+  .ch { display: inline-block; will-change: transform, opacity, filter; }
+  .word { display: inline-block; white-space: nowrap; }
+  .abs { position: absolute; }
+  .src { font: 700 20px var(--body); color: var(--quiet); }
+  .tag {
+    display: inline-flex; align-items: center; gap: 10px; height: 46px; padding: 0 18px; border-radius: 999px;
+    font: 800 20px var(--body); letter-spacing: 1px; white-space: nowrap;
+  }
+  .card {
+    position: absolute; background: #fff; border-radius: 22px; padding: 36px 40px;
+    box-shadow: 0 0 0 3px var(--ink), 0 26px 50px -24px rgba(43,58,103,.45);
+  }
+  .sticky { position: absolute; background: var(--sticky); border-radius: 4px; padding: 30px 34px; box-shadow: 0 2px 0 rgba(0,0,0,.05), 0 28px 44px -22px rgba(120,90,0,.5); }
+  .sticky.pink { background: var(--pink); box-shadow: 0 2px 0 rgba(0,0,0,.05), 0 28px 44px -22px rgba(150,40,90,.45); }
+  .tape { position: absolute; left: 50%; top: -20px; width: 150px; height: 40px; margin-left: -75px; background: rgba(255,255,255,.6); transform: rotate(-3deg); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+  .scrib { position: absolute; filter: drop-shadow(0 18px 18px rgba(43,58,103,.18)); }
+  .bubble {
+    position: absolute; padding: 22px 28px; border-radius: 26px; background: #fff;
+    font: 700 40px/1.12 var(--hand); color: var(--ink); box-shadow: 0 20px 40px -18px rgba(43,58,103,.45), 0 0 0 3px var(--ink);
+  }
+  .bubble::after { content: ""; position: absolute; left: 70px; bottom: -20px; width: 34px; height: 34px; background: #fff; transform: rotate(45deg); box-shadow: 3px 3px 0 0 var(--ink); }
+  .ask { position: absolute; display: flex; align-items: center; gap: 22px; padding: 28px 44px; border-radius: 26px; background: var(--blue); color: #fff; font: 800 40px/1.2 var(--body); box-shadow: 0 30px 50px -24px rgba(79,107,237,.8); }
+  .ask small { display: block; font: 900 18px var(--body); letter-spacing: 4px; opacity: .75; margin-bottom: 6px; }
+  svg.full { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: visible; pointer-events: none; }
+
+  /* ════ main slides: flow layouts that work on a 1920×1080 or a 1080×1920 stage ════ */
+  .mf { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 150px 120px 90px; }
+  body.portrait .mf { padding: 170px 80px 140px; }
+  .ey { font: 900 22px var(--body); letter-spacing: 5px; color: var(--quiet); margin-bottom: 10px; }
+  .mh { font: 700 104px/1 var(--hand); color: var(--ink); }
+  .mh .l2, .mh em { color: var(--blue); font-style: normal; }
+  .mh .l2 { display: block; }
+  .mh .hot { color: var(--coral); }
+  body.portrait .mh { font-size: 100px; line-height: 1.02; }
+  body.portrait .ey { font-size: 26px; }
+  body.portrait .brand { left: 80px; top: 64px; font-size: 56px; }
+
+  /* 1 · title */
+  .tf { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 80px 40px; }
+  .tf .halo2 { position: absolute; left: 50%; top: 46%; width: 1500px; height: 760px; margin: -380px 0 0 -750px; border-radius: 50%; background: radial-gradient(closest-side, rgba(79,107,237,.16), rgba(79,107,237,0)); }
+  .logoWrap { position: relative; }
+  .logoT { font: 700 340px/1 var(--hand); color: var(--ink); white-space: nowrap; }
+  .logoT b { color: var(--blue); font-weight: 700; }
+  .swoosh { display: block; width: 100%; height: 44px; margin-top: -18px; overflow: visible; }
+  .tagT { margin-top: 34px; font: 800 56px/1.2 var(--body); color: var(--ink); }
+  .tagT em { font-style: normal; color: var(--blue); }
+  .award { display: inline-flex; align-items: center; gap: 14px; margin-top: 34px; padding: 14px 30px; border-radius: 999px; background: var(--ink); color: #fff; font: 800 30px var(--body); }
+  .award .star { display: block; width: 34px; height: 34px; flex: none; }
+  .award svg { display: block; width: 34px; height: 34px; }
+  .names { position: absolute; right: 120px; bottom: 64px; font: 800 26px var(--body); color: var(--quiet); }
+  .logoRow { display: flex; align-items: flex-end; gap: 18px; }
+  #tWave { position: static; width: 250px; margin-bottom: 70px; }
+  body.portrait .tagT { font-size: 62px; max-width: 880px; }
+  body.portrait .award { font-size: 32px; padding: 16px 30px; }
+  body.portrait .names { left: 0; right: 0; bottom: 150px; text-align: center; font-size: 32px; }
+  body.portrait .logoT { font-size: 200px; }
+  body.portrait #tWave { width: 170px; margin-bottom: 50px; }
+
+  /* 2 · problem */
+  .pics { display: flex; gap: 60px; margin-top: 44px; }
+  .pic { position: relative; flex: 1; aspect-ratio: 760 / 399; border-radius: 22px; overflow: hidden; background: var(--lens);
+    box-shadow: 0 0 0 4px var(--ink), 0 30px 50px -26px rgba(43,58,103,.5); }
+  .pic img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .pic.home img { object-position: 50% 40%; filter: grayscale(1) brightness(.95); }
+  .pic.inlab img { object-position: 50% 40%; }
+  .pic .lbl { position: absolute; left: 18px; top: 18px; padding: 8px 16px; border-radius: 999px; background: var(--paper); font: 900 20px var(--body); letter-spacing: 3px; color: var(--ink); }
+  .pic .credit { position: absolute; right: 12px; bottom: 10px; padding: 3px 9px; border-radius: 6px; background: rgba(20,24,43,.55); color: rgba(255,255,255,.85); font: 700 13px var(--body); }
+  .srcline { margin-top: auto; font: 700 22px/1.4 var(--body); color: var(--quiet); }
+  .srcline b { color: var(--ink); }
+  body.portrait .pics { flex-direction: column; gap: 40px; margin-top: 50px; }
+  body.portrait .pic .lbl { font-size: 24px; }
+  body.portrait .srcline { font-size: 27px; }
+
+  /* 3 · demo */
+  #s-demo { background: #14182B; }
+  .vwrap { position: absolute; left: 210px; right: 210px; top: 48px; aspect-ratio: 16 / 9; border-radius: 26px; overflow: hidden; background: #000; box-shadow: 0 40px 80px -30px rgba(0,0,0,.6); cursor: pointer; }
+  .vwrap video { width: 100%; height: 100%; display: block; object-fit: cover; }
+  .vcap { position: absolute; left: 0; right: 0; bottom: 60px; text-align: center; font: 700 52px/1.1 var(--hand); color: #F4F1E8; }
+  .vcap b { color: #9FB2FF; font-weight: 700; }
+  .snd { position: absolute; right: 22px; top: 22px; display: flex; align-items: center; gap: 10px; padding: 14px 22px; border-radius: 999px; border: 0;
+    background: rgba(250,248,243,.94); color: var(--ink); font: 900 22px var(--body); cursor: pointer; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+  .snd svg { width: 28px; height: 28px; }
+  .snd .on { display: none; }
+  .snd.unmuted .on { display: block; } .snd.unmuted .off { display: none; }
+  .vbar2 { position: absolute; left: 0; right: 0; bottom: 0; height: 7px; background: rgba(255,255,255,.15); }
+  .vbar2 i { display: block; height: 100%; background: var(--blue); transform-origin: 0 50%; transform: scaleX(0); }
+  .vtop { display: none; }
+  body.portrait .vwrap { left: 0; right: 0; top: 50%; margin-top: -380px; border-radius: 0; }
+  body.portrait .vtop { display: block; position: absolute; left: 80px; right: 80px; top: 230px; }
+  body.portrait .vtop .ey { color: #9AA3BD; }
+  body.portrait .vtop .mh { color: #F4F1E8; font-size: 96px; }
+  body.portrait .vcap { bottom: auto; top: 50%; margin-top: 300px; padding: 0 70px; font-size: 64px; }
+  body.portrait .snd { font-size: 26px; padding: 16px 24px; }
+  #s-demo .brand { display: none; }
+  body.portrait #s-demo .brand { display: block; color: #F4F1E8; }
+
+  /* 4 · why it works */
+  .scards { display: flex; gap: 36px; margin-top: 50px; }
+  .sc { flex: 1; padding: 34px 38px; border-radius: 22px; background: #fff; box-shadow: 0 0 0 3px var(--ink), 0 26px 50px -24px rgba(43,58,103,.45); }
+  .sc .num { white-space: nowrap; font: 900 110px/1 var(--body); font-variant-numeric: tabular-nums; letter-spacing: -2px; }
+  .sc .lab { margin-top: 14px; font: 800 32px/1.2 var(--body); color: var(--ink); }
+  .sc .cite { margin-top: 12px; font: 700 20px var(--body); color: var(--quiet); }
+  .jline { display: flex; align-items: center; gap: 28px; margin-top: auto; }
+  .jline img { width: 190px; height: 132px; object-fit: cover; border-radius: 10px; box-shadow: 0 0 0 3px #fff, 0 0 0 5px rgba(43,58,103,.25); transform: rotate(-2deg); }
+  .jline div { font: 700 46px/1.1 var(--hand); color: var(--ink); }
+  .jline em { font-style: normal; color: var(--blue); }
+  body.portrait .scards { flex-direction: column; gap: 36px; margin-top: 70px; }
+  body.portrait .sc { display: grid; grid-template-columns: 370px 1fr; column-gap: 24px; align-items: center; padding: 40px 38px; }
+  body.portrait .sc .num { grid-row: span 2; font-size: 92px; }
+  body.portrait .sc .lab { margin-top: 0; font-size: 38px; }
+  body.portrait .sc .cite { font-size: 23px; }
+  body.portrait .jline img { width: 230px; height: 160px; }
+  body.portrait .jline div { font-size: 54px; }
+
+  /* 5 · oracle */
+  .oflow { display: flex; align-items: stretch; margin-top: 56px; }
+  .obox { flex: 1; position: relative; padding: 26px 24px; border-radius: 20px; background: #fff; box-shadow: 0 0 0 3px var(--ink), 0 24px 44px -24px rgba(43,58,103,.45); }
+  .obox .n { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--ink); color: #fff; font: 900 20px var(--body); }
+  .obox h4 { margin: 16px 0 14px; font: 800 30px/1.15 var(--body); color: var(--ink); }
+  .svc { display: block; margin-top: 8px; padding: 8px 12px; border-radius: 10px; background: rgba(199,70,52,.08); color: var(--oracle); font: 800 19px/1.25 var(--body); }
+  .svc small { display: block; color: var(--quiet); font: 700 16px var(--body); margin-top: 2px; word-break: break-word; }
+  .oarr { flex: 0 0 52px; display: grid; place-items: center; color: var(--ink); }
+  .oarr svg { width: 40px; height: 40px; }
+  .ocap { margin-top: auto; font: 700 46px/1.15 var(--hand); color: var(--ink); }
+  .ocap em { font-style: normal; color: var(--blue); }
+  .onote { margin-top: 10px; font: 700 19px var(--body); color: var(--quiet); }
+  body.portrait .oflow { flex-direction: column; margin-top: 40px; }
+  body.portrait .obox { display: grid; grid-template-columns: 52px 1fr; column-gap: 20px; align-items: start; padding: 22px 26px; }
+  body.portrait .obox .n { grid-row: span 3; margin-top: 4px; }
+  body.portrait .obox h4 { margin: 4px 0 6px; font-size: 40px; }
+  body.portrait .svc { font-size: 29px; } body.portrait .svc small { font-size: 24px; }
+  body.portrait .oarr { flex: 0 0 34px; } body.portrait .oarr svg { transform: rotate(90deg); width: 32px; height: 32px; }
+  body.portrait .ocap { font-size: 54px; }
+  body.portrait .onote { font-size: 25px; }
+
+  /* 6 · next steps */
+  .nsteps { display: flex; align-items: stretch; margin-top: 56px; }
+  .nst { flex: 1; padding: 28px 32px; border-radius: 20px; background: #fff; box-shadow: 0 0 0 3px var(--ink), 0 24px 44px -24px rgba(43,58,103,.45); }
+  .nst .k { font: 900 20px var(--body); letter-spacing: 5px; }
+  .nst .t { margin-top: 12px; font: 800 36px/1.15 var(--body); color: var(--ink); }
+  .nst .d { margin-top: 6px; font: 600 26px/1.3 var(--body); color: var(--quiet); }
+  .close { margin-top: 54px; font: 700 64px/1.08 var(--hand); color: var(--ink); }
+  .close em { font-style: normal; color: var(--blue); }
+  .links { display: flex; flex-wrap: wrap; gap: 18px; margin-top: auto; }
+  .lnk { display: inline-flex; align-items: center; gap: 12px; padding: 18px 28px; border-radius: 999px; background: #fff; color: var(--ink); text-decoration: none;
+    font: 800 26px var(--body); box-shadow: 0 0 0 3px var(--ink); }
+  .lnk svg { width: 28px; height: 28px; flex: none; }
+  .lnk.dark { background: var(--ink); color: #fff; }
+  .lnk.more { background: var(--blue); color: #fff; box-shadow: 0 18px 34px -16px rgba(79,107,237,.8); margin-left: auto; }
+  .lnk[hidden] { display: none; }
+  body.portrait .nsteps { flex-direction: column; }
+  body.portrait .nst { padding: 32px 36px; } body.portrait .nst .k { font-size: 24px; } body.portrait .nst .t { font-size: 46px; } body.portrait .nst .d { font-size: 34px; }
+  body.portrait .close { font-size: 74px; margin-top: 50px; }
+  body.portrait .links { gap: 20px; }
+  body.portrait .lnk { flex: 1 1 calc(50% - 10px); justify-content: center; font-size: 30px; padding: 22px 20px; }
+  body.portrait .lnk.more { flex-basis: 100%; margin-left: 0; }
+
+  /* Scribble rides along on every main slide */
+  .sv { position: absolute; right: 110px; top: 34px; width: 170px; z-index: 6; }
+  body.portrait .sv { right: 60px; top: 30px; width: 150px; }
+  #s-demo .sv { right: 22px; top: 70px; width: 170px; }
+  body.portrait #s-demo .sv { right: 60px; top: 30px; width: 150px; }
+
+  /* 3 · how it works */
+  .steps7 { display: flex; gap: 26px; margin-top: 64px; }
+  .st7 { position: relative; flex: 1; padding: 12px 12px 18px; border-radius: 18px; background: #fff; box-shadow: 0 0 0 3px var(--ink), 0 22px 36px -22px rgba(43,58,103,.5); }
+  .st7:not(:last-child)::after { content: "→"; position: absolute; right: -24px; top: 58px; font: 900 26px var(--body); color: var(--ink); }
+  .st7 .th { aspect-ratio: 16 / 9; border-radius: 10px; overflow: hidden; background: var(--lens); }
+  .st7 .th.doc { background: var(--blue-soft); }
+  .st7 .th img, .st7 .th svg { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .role { display: inline-block; margin-top: 12px; padding: 3px 9px; border-radius: 999px; font: 900 13px var(--body); letter-spacing: 1.5px; }
+  .r-t { background: var(--blue-soft); color: var(--blue); }
+  .r-a { background: rgba(199,70,52,.1); color: var(--oracle); }
+  .r-s { background: rgba(244,162,97,.18); color: #B86A24; }
+  .st7 b { display: flex; gap: 8px; align-items: flex-start; margin-top: 10px; font: 800 24px/1.15 var(--body); color: var(--ink); }
+  .st7 b i { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--ink); color: #fff; font: 900 15px var(--body); font-style: normal; }
+  .st7 p { margin: 8px 0 0; font: 600 19px/1.3 var(--body); color: var(--quiet); }
+  body.portrait .steps7 { flex-direction: column; gap: 26px; margin-top: 46px; }
+  body.portrait .st7 { display: grid; grid-template-columns: 320px 1fr; column-gap: 24px; align-items: center; padding: 14px 20px 14px 14px; }
+  body.portrait .st7:not(:last-child)::after { content: "↓"; right: auto; left: 50%; top: auto; bottom: -32px; font-size: 26px; }
+  body.portrait .role { margin-top: 0; font-size: 18px; }
+  body.portrait .st7 b { font-size: 34px; } body.portrait .st7 b i { width: 38px; height: 38px; font-size: 20px; }
+  body.portrait .st7 p { font-size: 27px; }
+
+  /* 5 · why it works */
+  .whyGrid { display: flex; gap: 44px; margin-top: 46px; }
+  .scol { flex: 1.45; display: flex; flex-direction: column; gap: 24px; }
+  .whyGrid .sc { display: grid; grid-template-columns: 270px 1fr; align-items: center; column-gap: 24px; padding: 26px 32px; }
+  .whyGrid .sc .num { font-size: 88px; }
+  .whyGrid .sc .num small { font-size: 44px; }
+  .whyGrid .sc .lab { margin-top: 0; font-size: 28px; }
+  .whyGrid .sc .cite { font-size: 19px; }
+  .jcard { flex: 1; padding: 26px 28px; border-radius: 22px; background: #fff; box-shadow: 0 0 0 3px var(--ink), 0 26px 50px -24px rgba(43,58,103,.45); }
+  .jcard .jt { font: 700 44px/1.05 var(--hand); color: var(--ink); }
+  .jcard .jt em { font-style: normal; color: var(--blue); }
+  .jcard img { display: block; width: 100%; aspect-ratio: 577 / 400; object-fit: cover; margin-top: 16px; border-radius: 12px; }
+  .jcard p { margin: 16px 0 0; font: 600 24px/1.35 var(--body); color: var(--ink); }
+  body.portrait .whyGrid { flex-direction: column; gap: 34px; margin-top: 40px; }
+  body.portrait .whyGrid .sc { grid-template-columns: 330px 1fr; padding: 30px 32px; }
+  body.portrait .whyGrid .sc .num { font-size: 84px; }
+  body.portrait .whyGrid .sc .lab { font-size: 32px; } body.portrait .whyGrid .sc .cite { font-size: 23px; }
+  body.portrait .jcard .jt { font-size: 56px; } body.portrait .jcard p { font-size: 30px; }
+
+  /* 6 · teachers (the three mock panels, now a main slide) */
+  .tcols { display: flex; gap: 34px; margin-top: 44px; }
+  .tcols .tcol { position: relative; top: auto; left: auto !important; width: auto; flex: 1; }
+  body.portrait .tcols { flex-direction: column; gap: 40px; margin-top: 36px; }
+  body.portrait .tcols .mock { height: 400px; }
+  body.portrait .tk { font-size: 24px; } body.portrait .tcap { font-size: 30px; }
+
+  /* 7 · oracle architecture */
+  .arch { display: block; width: 100%; margin-top: 30px; overflow: visible; }
+  .arch.land { height: 660px; }
+  .arch.port { display: none; height: auto; }
+  body.portrait .arch.land { display: none; }
+  body.portrait .arch.port { display: block; margin-top: 40px; }
+  .arch .box { fill: #fff; stroke: #2B3A67; stroke-width: 3; }
+  .arch .inner { fill: #FAF8F3; stroke: #C9D3E0; stroke-width: 2; }
+  .arch .inner.api { fill: #F1F4FE; stroke: #4F6BED; }
+  .arch .region { fill: rgba(199,70,52,.035); stroke: #C74634; stroke-width: 3; stroke-dasharray: 14 10; }
+  .arch .chip { fill: rgba(199,70,52,.07); }
+  .arch .chip-b { fill: #E8ECFD; }
+  .arch .fp { fill: none; stroke-width: 4.5; stroke-linecap: round; }
+  .arch .f1 { stroke: #4F6BED; } .arch .f2 { stroke: #E0703F; } .arch .f3 { stroke: #2E9E63; } .arch .f4 { stroke: #8A63D2; }
+  .ax-t { font: 800 25px var(--body); fill: #2B3A67; }
+  .ax-s { font: 700 17px var(--body); fill: #6B7591; }
+  .ax-h { font: 900 15px var(--body); letter-spacing: 3px; fill: #6B7591; }
+  .ax-h.oci { fill: #C74634; }
+  .ax-c { font: 800 20px var(--body); fill: #C74634; }
+  .ax-cb { font: 800 19px var(--body); fill: #4F6BED; }
+  .ax-m { font: 700 17px ui-monospace, Menlo, monospace; fill: #2B3A67; }
+  .ax-l { font: 800 18px var(--body); fill: #2B3A67; }
+  .ax-f { font: 900 14px var(--body); letter-spacing: .5px; }
+  .arch.port .ax-t { font-size: 32px; } .arch.port .ax-s { font-size: 23px; } .arch.port .ax-h { font-size: 19px; }
+  .arch.port .ax-c { font-size: 27px; } .arch.port .ax-cb { font-size: 24px; } .arch.port .ax-m { font-size: 23px; } .arch.port .ax-l { font-size: 25px; }
+
+  /* 8 · what's next */
+  .ncards { display: flex; gap: 36px; margin-top: 46px; }
+  .nc { flex: 1; padding: 14px 14px 26px; border-radius: 22px; background: #fff; box-shadow: 0 0 0 3px var(--ink), 0 26px 50px -24px rgba(43,58,103,.45); }
+  .nc .ph { aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden; background: var(--lens); }
+  .nc .ph img, .nc .ph svg { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .nc .k { margin: 20px 14px 0; font: 900 20px var(--body); letter-spacing: 5px; }
+  .nc .t { margin: 8px 14px 0; font: 800 38px/1.1 var(--body); color: var(--ink); }
+  .nc .d { margin: 8px 14px 0; font: 600 26px/1.3 var(--body); color: var(--quiet); }
+  body.portrait .ncards { flex-direction: column; gap: 32px; }
+  body.portrait .nc { padding: 14px 14px 26px; }
+  body.portrait .nc .ph { aspect-ratio: 16 / 7.5; }
+  body.portrait .nc .k { margin: 18px 14px 0; font-size: 22px; } body.portrait .nc .t { margin: 6px 14px 0; font-size: 44px; } body.portrait .nc .d { margin: 6px 14px 0; font-size: 30px; }
+
+
+  /* desktop fit-ups */
+  #probH { font-size: 84px; }
+  #howH .l2, #whyH .l2, #oraH .l2 { display: inline; }
+  .steps7 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 30px 34px; margin-top: 46px; }
+  .st7 .th { aspect-ratio: 16 / 7; }
+  .st7:nth-child(4)::after { display: none; }
+  .st7 b { font-size: 27px; } .st7 p { font-size: 21px; }
+  .whyGrid { margin-top: 36px; }
+  .whyGrid .sc { padding: 20px 30px; }
+  .whyGrid .sc .num { font-size: 78px; }
+  .whyGrid .sc .lab { font-size: 26px; }
+  .jcard img { aspect-ratio: auto; height: 250px; }
+  .jcard p { font-size: 22px; }
+  body.portrait #probH { font-size: 96px; }
+  body.portrait #howH .l2, body.portrait #whyH .l2, body.portrait #oraH .l2 { display: block; }
+  body.portrait .steps7 { display: flex; }
+  body.portrait .st7 .th { aspect-ratio: 16 / 9; }
+  body.portrait .st7:nth-child(4)::after { display: block; }
+  body.portrait .jcard img { height: auto; aspect-ratio: 577 / 400; }
+
+  /* landscape-only "More" slides shown on a phone held upright */
+  #rotate { position: fixed; left: 50%; top: 18px; transform: translateX(-50%); padding: 8px 14px; border-radius: 999px; background: rgba(250,248,243,.95); color: var(--ink);
+    font: 800 13px var(--body); z-index: 101; display: none; white-space: nowrap; }
+  body.landslide #rotate { display: block; top: 26px; }
+  /* ── 4 · how it works ── */
+  .lanes { position: absolute; top: 420px; left: 0; right: 0; }
+  .lane { position: absolute; padding-top: 10px; border-top: 5px solid; text-align: center; font: 900 17px var(--body); letter-spacing: 3px; }
+  .lane.t { border-color: var(--blue); color: var(--blue); }
+  .lane.a { border-color: var(--oracle); color: var(--oracle); }
+  .lane.s { border-color: var(--orange); color: #B86A24; }
+  .pcard { position: absolute; top: 490px; width: 216px; padding: 10px 10px 14px; background: #fff; border-radius: 16px; box-shadow: 0 0 0 3px var(--ink), 0 22px 36px -22px rgba(43,58,103,.5); }
+  .thumb { height: 124px; border-radius: 10px; overflow: hidden; background: var(--lens); }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .docthumb { background: var(--blue-soft); }
+  .docthumb svg { width: 100%; height: 100%; display: block; }
+  .pt { display: flex; gap: 8px; align-items: flex-start; margin-top: 12px; font: 800 24px/1.15 var(--body); color: var(--ink); }
+  .pt b { flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--ink); color: #fff; font: 900 16px var(--body); }
+  .pd { margin-top: 8px; font: 600 19px/1.3 var(--body); color: var(--quiet); }
+  .howNote { left: 120px; top: 860px; width: 1060px; padding: 26px 36px; font: 700 42px/1.1 var(--hand); color: var(--ink); transform: rotate(-1deg); }
+  .howNote b { display: block; color: var(--blue); font-size: 54px; }
+  .watch-unused { position: absolute; left: 1450px; top: 905px; display: flex; align-items: center; gap: 16px; padding: 22px 38px; border-radius: 999px; background: var(--blue); color: #fff;
+    font: 800 38px var(--body); box-shadow: 0 26px 44px -22px rgba(79,107,237,.8); }
+  .watch span { display: inline-block; }
+
+  /* ── 5 · teacher experience ── */
+  .tcol { position: absolute; top: 410px; width: 540px; }
+  .tk { display: flex; align-items: center; gap: 12px; font: 900 19px var(--body); letter-spacing: 4px; color: var(--quiet); margin-bottom: 14px; }
+  .tk b { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--blue); color: #fff; font: 900 18px var(--body); letter-spacing: 0; }
+  .mock { position: relative; height: 420px; border-radius: 18px; overflow: hidden; background: var(--paper);
+    background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size: 24px 24px;
+    box-shadow: 0 0 0 3px var(--ink), 0 30px 50px -26px rgba(43,58,103,.5); }
+  .mbar { display: flex; align-items: center; gap: 10px; height: 54px; padding: 0 16px; background: #fff; border-bottom: 2px solid var(--ink); }
+  .mlogo { font: 700 30px/1 var(--hand); color: var(--ink); margin-right: 6px; }
+  .mlogo i { font-style: normal; color: var(--blue); }
+  .mtab { font: 800 14px var(--body); color: var(--quiet); padding: 6px 10px; border-radius: 8px; border: 2px solid transparent; }
+  .mtab.on { color: var(--ink); border-color: var(--ink); }
+  .msample { margin-left: auto; font: 900 11px var(--body); letter-spacing: 2px; color: var(--blue); background: var(--blue-soft); padding: 5px 9px; border-radius: 999px; }
+  .tcap { margin-top: 18px; font: 600 24px/1.3 var(--body); color: var(--ink); }
+
+  .drop { position: absolute; left: 30px; right: 30px; top: 84px; bottom: 30px; border: 3px dashed #B9C4D6; border-radius: 16px; background: rgba(255,255,255,.85);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; }
+  .drop .dt { font: 700 34px/1 var(--hand); color: var(--ink); }
+  .pdf { padding: 10px 16px; border-radius: 10px; background: #fff; font: 800 18px var(--body); color: var(--ink); box-shadow: 0 0 0 3px var(--coral), 0 14px 24px -12px rgba(43,58,103,.5); }
+  .build { width: 80%; }
+  .build .bl { display: flex; align-items: center; justify-content: center; gap: 8px; font: 800 16px var(--body); color: var(--ink); margin-bottom: 8px; }
+  .odot { width: 10px; height: 10px; border-radius: 50%; background: var(--oracle); }
+  .pb { height: 12px; border-radius: 6px; background: #E6EAF2; overflow: hidden; }
+  .pb i { display: block; height: 100%; background: var(--blue); transform-origin: 0 50%; transform: scaleX(0); }
+  .sent { font: 900 20px var(--body); color: var(--green-ink); }
+
+  .rep { padding: 16px 22px; }
+  .aip { display: inline-block; font: 900 12px var(--body); color: var(--blue); background: var(--blue-soft); padding: 4px 10px; border-radius: 999px; }
+  .rsum { margin: 8px 0 12px; font: 700 30px/1.08 var(--hand); color: var(--ink); }
+  .rstats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
+  .rstats div { padding: 8px 10px; border-radius: 10px; background: #fff; box-shadow: 0 0 0 2px #C9D3E0; font: 700 13px var(--body); color: var(--quiet); }
+  .rstats b { display: block; font: 900 30px/1 var(--body); color: var(--ink); font-variant-numeric: tabular-nums; }
+  .rq { display: grid; grid-template-columns: 1fr 110px 24px; gap: 10px; align-items: center; margin-top: 6px; font: 700 15px var(--body); color: var(--ink); }
+  .rq i { height: 10px; border-radius: 5px; background: linear-gradient(var(--blue), var(--blue)) no-repeat 0 0 / var(--w) 100%, #E6EAF2; }
+  .rq em { font-style: normal; font-weight: 900; text-align: right; }
+  .rnote { margin-top: 12px; padding: 10px 14px; border-radius: 8px; background: var(--sticky); font: 700 24px/1.05 var(--hand); color: var(--ink); transform: rotate(-1deg); }
+  .rnote small { display: block; margin-top: 4px; font: 800 12px var(--body); letter-spacing: 1px; color: rgba(43,58,103,.6); }
+
+  .lib { padding: 16px 20px; }
+  .srch { padding: 10px 14px; border-radius: 10px; background: #fff; box-shadow: 0 0 0 2px #C9D3E0; font: 600 15px var(--body); color: var(--quiet); }
+  .lcards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 14px; }
+  .lc { border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 0 0 2.5px var(--ink); padding-bottom: 10px; font: 600 13px var(--body); color: var(--quiet); }
+  .lc .ic { height: 78px; display: grid; place-items: center; background: var(--c); border-bottom: 2.5px solid var(--ink); margin-bottom: 8px; }
+  .lc .ic svg { width: 46px; height: 46px; }
+  .lc b, .lc span, .lc em { display: block; padding: 0 10px; }
+  .lc b { font: 800 16px/1.15 var(--body); color: var(--ink); }
+  .lc em { margin-top: 6px; font: 900 18px var(--body); font-style: normal; color: var(--green-ink); }
+  .lc em.paid { color: var(--ink); }
+  .earn { display: flex; align-items: center; gap: 12px; margin-top: 18px; padding: 12px 16px; border-radius: 12px; background: var(--ink); color: #fff; font: 800 17px/1.25 var(--body); }
+  .coin { flex: none; display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; background: var(--sticky); color: var(--ink); font: 900 22px var(--body); box-shadow: 0 0 0 3px #C99A1E inset; }
+
+  /* ── 6 · teacher ── */
+  .path { left: 120px; top: 420px; width: 980px; height: 560px; }
+  .path h3, .prog h3 { margin: 0 0 4px; font: 700 54px/1 var(--hand); }
+  .path .sub { font: 700 24px var(--body); color: var(--quiet); }
+  .attempt { display: grid; grid-template-columns: 14px 1fr auto; gap: 22px; align-items: center; margin-top: 34px; }
+  .attempt .bar { width: 14px; height: 96px; border-radius: 7px; }
+  .attempt .a { font: 800 34px/1.2 var(--body); }
+  .attempt .a small { display: block; font: 700 24px var(--body); color: var(--quiet); }
+  .attempt .res { text-align: right; font: 900 46px/1 var(--body); font-variant-numeric: tabular-nums; }
+  .attempt .res small { display: block; font: 800 20px var(--body); letter-spacing: 3px; color: var(--quiet); margin-bottom: 6px; }
+  .stamp { position: absolute; right: 40px; bottom: 34px; padding: 12px 24px; border: 5px solid var(--green-ink); border-radius: 14px; color: var(--green-ink);
+    font: 900 28px var(--body); letter-spacing: 2px; transform: rotate(-5deg); background: rgba(61,190,122,.08); }
+  .flag { left: 1170px; top: 400px; width: 630px; transform: rotate(1.5deg); }
+  .flag .k { font: 900 18px var(--body); letter-spacing: 4px; color: #B5532F; }
+  .flag .q { font: 700 52px/1.05 var(--hand); margin: 10px 0 14px; }
+  .flag .n { font: 800 28px var(--body); }
+  .prog { left: 1170px; top: 700px; width: 630px; height: 280px; padding: 28px 36px; }
+  .prog .pr { display: grid; grid-template-columns: 1fr 90px; gap: 6px 14px; align-items: center; margin-top: 12px; font: 800 24px var(--body); }
+  .prog .pr .bar { grid-column: 1 / -1; height: 18px; border-radius: 9px; }
+  .prog .pr .bar i { background: var(--green); border-radius: 9px; }
+  .prog .pr .v { text-align: right; font: 900 26px var(--body); font-variant-numeric: tabular-nums; }
+  .sample { position: absolute; right: 120px; top: 70px; background: var(--blue-soft); color: var(--blue); }
+
+  .bk { position: absolute; right: 120px; top: 64px; background: #EEF1F7; color: var(--quiet); }
+  .grid6 { position: absolute; left: 120px; top: 420px; width: 1680px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
+  .grid6 .card { position: relative; padding: 30px 34px; height: 250px; }
+  .grid6 .card .n { font: 700 60px/1 var(--hand); color: var(--blue); }
+  .grid6 .card h4 { margin: 6px 0 8px; font: 800 32px/1.15 var(--body); }
+  .grid6 .card p { margin: 0; font: 600 24px/1.3 var(--body); color: var(--quiet); }
+  #roller { position: absolute; left: 0; top: 0; z-index: 40; visibility: hidden; pointer-events: none; }
+  /* on-screen controls so anyone opening the link can click through */
+  #nav { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); display: flex; align-items: center; gap: 4px; padding: 6px;
+    border-radius: 999px; background: rgba(20,24,43,.82); backdrop-filter: blur(8px); box-shadow: 0 10px 30px rgba(0,0,0,.3); transition: opacity .4s; z-index: 100; }
+  #nav button { all: unset; cursor: pointer; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; color: #fff; }
+  #nav button:hover { background: rgba(255,255,255,.14); }
+  #nav button:focus-visible { outline: 2px solid #8FA2FF; outline-offset: 2px; }
+  #nav svg { width: 22px; height: 22px; }
+  #hud { min-width: 92px; text-align: center; font: 800 14px var(--body); color: rgba(255,255,255,.8); letter-spacing: 1.5px; font-variant-numeric: tabular-nums; }
+  body.idle #nav { opacity: 0; pointer-events: none; }
+  #hint { position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%); padding: 10px 18px; border-radius: 12px; background: rgba(20,24,43,.82);
+    color: #fff; font: 700 15px var(--body); white-space: nowrap; pointer-events: none; transition: opacity .6s; z-index: 100; }
+  #hint.gone { opacity: 0; }
+  #progress { position: fixed; left: 14px; right: 14px; top: 10px; display: flex; gap: 6px; z-index: 100; pointer-events: none; transition: opacity .4s; }
+  #progress i { flex: 1; height: 4px; border-radius: 2px; background: rgba(255,255,255,.22); }
+  #progress i.on { background: #8FA2FF; }
+  #progress.more i.on { background: rgba(143,162,255,.45); }
+  .lnk { border: 0; cursor: pointer; }
+  @media (max-width: 600px) { #nav { bottom: max(12px, env(safe-area-inset-bottom)); } #hint { bottom: 80px; } }
+</style>
+<noscript><style>#s-title { visibility: visible; } #nav, #hint { display: none; }</style></noscript>
+</head>
+<body>
+<div id="stage">
+
+  <!-- ═════════ 1 · ScribbleVu ═════════ -->
+  <section class="slide" id="s-title">
+    <div class="gridbg"></div>
+    <div class="tf">
+      <div class="halo2" id="halo"></div>
+      <div class="logoRow">
+        <div class="logoWrap" id="logoWrap">
+          <div class="logoT" id="logo">Scribble<b>Vu</b></div>
+          <svg class="swoosh" viewBox="0 0 1000 44" preserveAspectRatio="none"><path id="swoosh" d="M20 30 C 300 4, 700 4, 980 22" fill="none" stroke="#4F6BED" stroke-opacity=".85" stroke-width="12" stroke-linecap="round"/></svg>
+        </div>
+        <img class="scrib" id="tWave" src="assets/scrib_wave.png" alt="">
+      </div>
+      <div class="tagT" id="tagline">Turn any lesson into a lab students <em>step inside.</em></div>
+      <div class="award" id="award"><span class="star"><svg viewBox="0 0 54 54"><path d="M27 4l6.6 13.4 14.8 2.2-10.7 10.4 2.5 14.7L27 37.8l-13.2 6.9 2.5-14.7L5.6 19.6l14.8-2.2z" fill="#FFE38A" stroke="#FFE38A" stroke-width="2" stroke-linejoin="round"/></svg></span>3rd place, HackTN 2026 · built on Oracle Cloud</div>
+    </div>
+    <img class="scrib" id="tBusy" src="assets/scrib_scribble.png" alt="" style="left:0; top:0; width:220px">
+    <div class="names" id="names">James Ramundo · Fadhil Lawal</div>
+  </section>
+
+  <!-- ═════════ 2 · The problem ═════════ -->
+  <section class="slide" id="s-problem">
+    <div class="gridbg"></div>
+    <div class="brand">Scribble<b>Vu</b></div>
+    <img class="scrib sv" src="assets/scrib_surprised.png" alt="">
+    <div class="mf">
+      <div class="ey">THE PROBLEM</div>
+      <div class="mh" id="probH"><span class="l1">Learning from home is up <span class="hot">41%</span> in four years.</span> <span class="l2">None of those students get to experience the classroom.</span></div>
+      <div class="pics">
+        <div class="pic home" id="picHome"><img src="assets/photo_home.jpg" alt="A kid alone at a laptop in a remote class"><span class="lbl">AT HOME</span><span class="credit">Thomas Park / Unsplash</span></div>
+        <div class="pic inlab" id="picLab"><img src="assets/photo_lab_color.jpg" alt="Kids crowded around a 3D printer in a classroom lab"><span class="lbl">IN THE LAB</span><span class="credit">Adam Winger / Unsplash</span></div>
+      </div>
+      <div class="srcline" id="srcline">Source: NCES, 2023</div>
+    </div>
+  </section>
+
+  <!-- ═════════ 3 · Demo video ═════════ -->
+  <section class="slide" id="s-demo">
+    <div class="brand">Scribble<b>Vu</b></div>
+    <img class="scrib sv" src="assets/scrib_cheer.png" alt="">
+    <div class="vtop"><div class="ey">THE DEMO · UNDER 3 MINUTES</div><div class="mh">Watch it work.</div></div>
+    <div class="vwrap" id="vwrap">
+      <video id="vid" src="assets/demo.mp4?v=4" poster="assets/demo_poster.jpg?v=4" muted loop playsinline preload="auto"></video>
+      <button class="snd" id="snd" aria-label="Turn sound on">
+        <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M22 9l-6 6M16 9l6 6"/></svg>
+        <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg>
+        <span id="sndTxt">Tap for sound</span>
+      </button>
+      <div class="vbar2"><i id="vprog2"></i></div>
+    </div>
+    <div class="vcap" id="vcap">Scribble never gives the answer. <b>It rebuilds the room around the question.</b></div>
+  </section>
+
+  <!-- ═════════ 5 · Why it works ═════════ -->
+  <section class="slide" id="s-why">
+    <div class="gridbg"></div>
+    <div class="brand">Scribble<b>Vu</b></div>
+    <img class="scrib sv" src="assets/scrib_think.png" alt="">
+    <div class="mf">
+      <div class="ey">WHY IT WORKS</div>
+      <div class="mh" id="whyH"><span class="l1">Learning is</span> <span class="l2">an experience.</span></div>
+      <div class="whyGrid">
+        <div class="scol" id="scards">
+          <div class="sc"><div class="num" style="color:var(--blue)">+<span data-n="7">7</span>%</div><div><div class="lab">higher quiz grades when students physically felt the physics</div><div class="cite">Kontra et al., 2015</div></div></div>
+          <div class="sc"><div class="num" style="color:var(--coral)">−<span data-n="35">35</span>%</div><div><div class="lab">fewer students fail with hands-on learning than with lecture alone</div><div class="cite">Freeman et al., 2014 · 21.8% vs 33.8% failing</div></div></div>
+          <div class="sc"><div class="num" style="color:var(--green-ink)"><span data-n="65">65</span><small>th</small></div><div><div class="lab">percentile for the average student after immersive VR, up from the 50th</div><div class="cite">Coban et al., 2022 · 48 studies</div></div></div>
+        </div>
+        <div class="jcard" id="jcard">
+          <div class="jt">Inspired by Vanderbilt's <em>Jasper Woodbury</em> series</div>
+          <img src="assets/jasper.png" alt="Stills from The Adventures of Jasper Woodbury">
+          <p>In the 1990s, Vanderbilt researchers made video adventures where students solved a real problem hidden inside the story. ScribbleVu puts the student inside the story.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════ 7 · Built on Oracle Cloud: system architecture ═════════ -->
+  <section class="slide" id="s-oracle">
+    <div class="gridbg"></div>
+    <div class="brand">Scribble<b>Vu</b></div>
+    <img class="scrib sv" src="assets/scrib_scribble.png" alt="">
+    <div class="mf">
+      <div class="ey">UNDER THE HOOD</div>
+      <div class="mh" id="oraH"><span class="l1">How we built it on</span> <span class="l2">Oracle Cloud.</span></div>
+      <svg class="arch land" viewBox="0 0 1680 760" role="img" aria-label="ScribbleVu system architecture on Oracle Cloud">
+        <defs>
+          <marker id="aB" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#4F6BED"/></marker>
+          <marker id="aC" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#E0703F"/></marker>
+          <marker id="aG" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#2E9E63"/></marker>
+          <marker id="aP" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#8A63D2"/></marker>
+        </defs>
+        <!-- clients -->
+        <g class="bx"><rect x="0" y="40" width="300" height="140" rx="16" class="box"/><text x="22" y="82" class="ax-t">Teacher browser</text><text x="22" y="112" class="ax-s">Upload a lesson PDF</text><text x="22" y="138" class="ax-s">Read the class report</text></g>
+        <g class="bx"><rect x="0" y="290" width="300" height="190" rx="16" class="box"/><text x="22" y="332" class="ax-t">Student app</text><text x="22" y="360" class="ax-s">Unity · laptop or headset</text>
+          <rect x="16" y="380" width="268" height="84" rx="10" class="chip-b"/><text x="32" y="414" class="ax-cb">Whisper speech-to-text</text><text x="32" y="442" class="ax-s">runs on the device</text></g>
+        <g class="bx"><rect x="0" y="580" width="300" height="140" rx="16" class="box"/><text x="22" y="622" class="ax-t">Phone controller</text><text x="22" y="652" class="ax-s">iPhone gyro pointer</text><text x="22" y="678" class="ax-s">grab · talk · lever</text></g>
+        <!-- Oracle Cloud region -->
+        <g class="bx"><rect x="350" y="0" width="960" height="760" rx="24" class="region"/><text x="374" y="32" class="ax-h oci">ORACLE CLOUD INFRASTRUCTURE · US-CHICAGO-1</text></g>
+        <g class="bx"><rect x="380" y="56" width="380" height="676" rx="18" class="box"/><text x="400" y="88" class="ax-h">OCI COMPUTE · VM</text>
+          <rect x="400" y="104" width="340" height="100" rx="12" class="inner"/><text x="420" y="144" class="ax-t">Apache</text><text x="420" y="172" class="ax-s">HTTPS / WSS for the phone</text>
+          <rect x="400" y="234" width="340" height="476" rx="12" class="inner api"/><text x="420" y="274" class="ax-t">ScribbleVu API</text><text x="420" y="300" class="ax-s">Python · FastAPI</text>
+          <text x="420" y="350" class="ax-m">POST /lesson</text><text x="420" y="384" class="ax-m">POST /ask</text><text x="420" y="418" class="ax-m">POST /event</text><text x="420" y="452" class="ax-m">GET  /report</text><text x="420" y="486" class="ax-m">WS   /ws/unity</text><text x="420" y="520" class="ax-m">WS   /ws/phone</text>
+          <text x="420" y="590" class="ax-s">Grounds every answer in</text><text x="420" y="614" class="ax-s">the teacher's lesson, relays</text><text x="420" y="638" class="ax-s">the phone, logs each race</text></g>
+        <g class="bx"><rect x="830" y="56" width="450" height="320" rx="18" class="box"/><text x="850" y="88" class="ax-h">OCI GENERATIVE AI</text>
+          <rect x="850" y="104" width="410" height="128" rx="12" class="chip"/><text x="870" y="142" class="ax-c">meta.llama-3.3-70b-instruct</text><text x="870" y="170" class="ax-s">lesson cards · answers · scene plans</text><text x="870" y="196" class="ax-s">class reports · teacher questions</text>
+          <rect x="850" y="248" width="410" height="108" rx="12" class="chip"/><text x="870" y="286" class="ax-c">cohere.embed-v4.0</text><text x="870" y="314" class="ax-s">embeds lesson passages + questions</text></g>
+        <g class="bx"><rect x="830" y="416" width="450" height="316" rx="18" class="box"/><text x="850" y="448" class="ax-h">MYSQL HEATWAVE · PRIVATE SUBNET</text>
+          <rect x="850" y="464" width="410" height="124" rx="12" class="chip"/><text x="870" y="502" class="ax-c">Vector store</text><text x="870" y="530" class="ax-s">VECTOR(1536) lesson passages</text><text x="870" y="556" class="ax-s">cosine DISTANCE search</text>
+          <rect x="850" y="604" width="410" height="108" rx="12" class="chip"/><text x="870" y="642" class="ax-c">Session events</text><text x="870" y="670" class="ax-s">builds · races · questions</text></g>
+        <g class="bx"><rect x="1380" y="56" width="300" height="134" rx="16" class="box"/><text x="1402" y="98" class="ax-t">ElevenLabs</text><text x="1402" y="126" class="ax-s">Scribble's voice</text><text x="1402" y="152" class="ax-s">outside OCI</text></g>
+        <g class="bx legend"><rect x="1380" y="236" width="300" height="300" rx="16" class="inner"/><text x="1402" y="272" class="ax-h">FLOWS</text>
+          <line x1="1402" y1="314" x2="1452" y2="314" stroke="#4F6BED" stroke-width="6" stroke-linecap="round"/><text x="1466" y="320" class="ax-l">Lesson in, lab out</text>
+          <line x1="1402" y1="368" x2="1452" y2="368" stroke="#E0703F" stroke-width="6" stroke-linecap="round"/><text x="1466" y="374" class="ax-l">Question → scene</text>
+          <line x1="1402" y1="422" x2="1452" y2="422" stroke="#2E9E63" stroke-width="6" stroke-linecap="round"/><text x="1466" y="428" class="ax-l">Phone controller</text>
+          <line x1="1402" y1="476" x2="1452" y2="476" stroke="#8A63D2" stroke-width="6" stroke-linecap="round"/><text x="1466" y="482" class="ax-l">Class insight</text></g>
+        <!-- flows -->
+        <g class="flows">
+          <path class="fp f1" d="M300 110 C 352 110, 348 300, 400 300" marker-end="url(#aB)"/>
+          <path class="fp f1" d="M740 300 C 790 300, 800 168, 850 168" marker-end="url(#aB)"/>
+          <path class="fp f1" d="M740 330 C 790 330, 800 300, 850 300" marker-end="url(#aB)"/>
+          <path class="fp f1" d="M1200 356 V 464" marker-end="url(#aB)"/>
+          <path class="fp f1" d="M400 352 C 352 352, 348 342, 300 342" marker-end="url(#aB)"/>
+          <path class="fp f2" d="M300 410 C 350 410, 350 400, 400 400" marker-end="url(#aC)"/>
+          <path class="fp f2" d="M740 420 C 790 420, 800 526, 850 526" marker-end="url(#aC)"/>
+          <path class="fp f2" d="M740 380 C 795 380, 800 200, 850 200" marker-end="url(#aC)"/>
+          <path class="fp f2" d="M700 234 C 700 24, 1300 24, 1520 56" marker-end="url(#aC)"/>
+          <path class="fp f2" d="M400 440 C 350 440, 350 436, 300 436" marker-end="url(#aC)"/>
+          <path class="fp f3" d="M300 650 C 352 650, 348 154, 400 154" marker-end="url(#aG)"/>
+          <path class="fp f3" d="M570 204 V 234" marker-end="url(#aG)"/>
+          <path class="fp f3" d="M400 470 C 350 470, 350 462, 300 462" marker-end="url(#aG)"/>
+          <path class="fp f4" d="M300 318 C 352 318, 348 520, 400 520" marker-end="url(#aP)"/>
+          <path class="fp f4" d="M740 560 C 790 560, 800 658, 850 658" marker-end="url(#aP)"/>
+          <path class="fp f4" d="M1260 658 C 1300 658, 1300 180, 1260 180" marker-end="url(#aP)"/>
+          <path class="fp f4" d="M400 620 C 340 620, 352 150, 300 150" marker-end="url(#aP)"/>
+          <text x="318" y="96" class="ax-f" fill="#4F6BED">PDF</text>
+          <text x="306" y="398" class="ax-f" fill="#E0703F">text, not audio</text>
+          <text x="306" y="574" class="ax-f" fill="#2E9E63">WSS</text>
+          <text x="1022" y="18" class="ax-f" fill="#E0703F">answer → voice</text>
+        </g>
+      </svg>
+
+      <svg class="arch port" viewBox="0 0 920 1640" role="img" aria-label="ScribbleVu system architecture on Oracle Cloud">
+        <defs>
+          <marker id="pB" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#4F6BED"/></marker>
+          <marker id="pC" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#E0703F"/></marker>
+          <marker id="pG" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#2E9E63"/></marker>
+          <marker id="pP" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#8A63D2"/></marker>
+        </defs>
+        <g class="bx"><rect x="0" y="0" width="290" height="170" rx="16" class="box"/><text x="20" y="46" class="ax-t">Teacher</text><text x="20" y="78" class="ax-s">Upload a lesson PDF</text><text x="20" y="106" class="ax-s">Read the class</text><text x="20" y="132" class="ax-s">report</text></g>
+        <g class="bx"><rect x="315" y="0" width="290" height="214" rx="16" class="box"/><text x="335" y="46" class="ax-t">Student app</text><text x="335" y="78" class="ax-s">Unity · laptop or headset</text>
+          <rect x="331" y="100" width="258" height="98" rx="10" class="chip-b"/><text x="347" y="138" class="ax-cb">Whisper speech-to-text</text><text x="347" y="170" class="ax-s">runs on the device</text></g>
+        <g class="bx"><rect x="630" y="0" width="290" height="170" rx="16" class="box"/><text x="650" y="46" class="ax-t">Phone controller</text><text x="650" y="78" class="ax-s">iPhone gyro pointer</text><text x="650" y="106" class="ax-s">grab · talk · lever</text></g>
+        <g class="bx"><rect x="0" y="272" width="920" height="1000" rx="24" class="region"/><text x="22" y="306" class="ax-h oci">ORACLE CLOUD INFRASTRUCTURE · US-CHICAGO-1</text></g>
+        <g class="bx"><rect x="20" y="326" width="880" height="374" rx="18" class="box"/><text x="40" y="360" class="ax-h">OCI COMPUTE · VM</text>
+          <rect x="40" y="376" width="510" height="304" rx="12" class="inner api"/><text x="60" y="418" class="ax-t">ScribbleVu API</text><text x="60" y="448" class="ax-s">Python · FastAPI</text>
+          <text x="60" y="502" class="ax-m">POST /lesson</text><text x="60" y="540" class="ax-m">POST /ask</text><text x="60" y="578" class="ax-m">POST /event</text>
+          <text x="300" y="502" class="ax-m">GET /report</text><text x="300" y="540" class="ax-m">WS /ws/unity</text><text x="300" y="578" class="ax-m">WS /ws/phone</text>
+          <text x="60" y="640" class="ax-s">Grounds answers · relays phone · logs races</text>
+          <rect x="580" y="376" width="300" height="120" rx="12" class="inner"/><text x="600" y="420" class="ax-t">Apache</text><text x="600" y="452" class="ax-s">HTTPS / WSS for</text><text x="600" y="478" class="ax-s">the phone</text></g>
+        <g class="bx"><rect x="20" y="740" width="430" height="500" rx="18" class="box"/><text x="40" y="774" class="ax-h">OCI GENERATIVE AI</text>
+          <rect x="40" y="792" width="390" height="200" rx="12" class="chip"/><text x="60" y="834" class="ax-c">meta.llama-3.3-</text><text x="60" y="864" class="ax-c">70b-instruct</text><text x="60" y="900" class="ax-s">lesson cards · answers</text><text x="60" y="928" class="ax-s">scene plans · reports</text><text x="60" y="956" class="ax-s">teacher questions</text>
+          <rect x="40" y="1012" width="390" height="208" rx="12" class="chip"/><text x="60" y="1054" class="ax-c">cohere.embed-v4.0</text><text x="60" y="1090" class="ax-s">embeds lesson passages</text><text x="60" y="1118" class="ax-s">and questions</text></g>
+        <g class="bx"><rect x="470" y="740" width="430" height="500" rx="18" class="box"/><text x="490" y="774" class="ax-h">MYSQL HEATWAVE</text>
+          <rect x="490" y="792" width="390" height="200" rx="12" class="chip"/><text x="510" y="834" class="ax-c">Vector store</text><text x="510" y="870" class="ax-s">VECTOR(1536) passages</text><text x="510" y="898" class="ax-s">cosine DISTANCE search</text>
+          <rect x="490" y="1012" width="390" height="208" rx="12" class="chip"/><text x="510" y="1054" class="ax-c">Session events</text><text x="510" y="1090" class="ax-s">builds · races</text><text x="510" y="1118" class="ax-s">questions</text></g>
+        <g class="bx"><rect x="0" y="1320" width="420" height="150" rx="16" class="box"/><text x="22" y="1364" class="ax-t">ElevenLabs</text><text x="22" y="1396" class="ax-s">Scribble's voice</text><text x="22" y="1424" class="ax-s">outside OCI</text></g>
+        <g class="bx legend"><rect x="470" y="1310" width="450" height="320" rx="16" class="inner"/><text x="492" y="1350" class="ax-h">FLOWS</text>
+          <line x1="492" y1="1396" x2="542" y2="1396" stroke="#4F6BED" stroke-width="7" stroke-linecap="round"/><text x="560" y="1404" class="ax-l">Lesson in, lab out</text>
+          <line x1="492" y1="1458" x2="542" y2="1458" stroke="#E0703F" stroke-width="7" stroke-linecap="round"/><text x="560" y="1466" class="ax-l">Question → scene</text>
+          <line x1="492" y1="1520" x2="542" y2="1520" stroke="#2E9E63" stroke-width="7" stroke-linecap="round"/><text x="560" y="1528" class="ax-l">Phone controller</text>
+          <line x1="492" y1="1582" x2="542" y2="1582" stroke="#8A63D2" stroke-width="7" stroke-linecap="round"/><text x="560" y="1590" class="ax-l">Class insight</text></g>
+        <g class="flows">
+          <path class="fp f1" d="M120 170 V 376" marker-end="url(#pB)"/>
+          <path class="fp f1" d="M180 680 V 792" marker-end="url(#pB)"/>
+          <path class="fp f1" d="M430 1100 C 460 1100, 460 900, 490 900" marker-end="url(#pB)"/>
+          <path class="fp f1" d="M380 376 C 380 290, 400 250, 400 214" marker-end="url(#pB)"/>
+          <path class="fp f2" d="M500 214 C 500 290, 470 300, 470 376" marker-end="url(#pC)"/>
+          <path class="fp f2" d="M240 680 V 792" marker-end="url(#pC)"/>
+          <path class="fp f2" d="M520 680 C 520 730, 640 740, 640 792" marker-end="url(#pC)"/>
+          <path class="fp f2" d="M100 680 C 100 710, 10 720, 10 760 V 1290 C 10 1306, 40 1320, 60 1320" marker-end="url(#pC)"/>
+          <path class="fp f3" d="M775 170 V 376" marker-end="url(#pG)"/>
+          <path class="fp f3" d="M580 436 H 550" marker-end="url(#pG)"/>
+          <path class="fp f3" d="M330 376 C 330 300, 350 250, 350 214" marker-end="url(#pG)"/>
+          <path class="fp f4" d="M560 214 C 560 300, 530 310, 530 376" marker-end="url(#pP)"/>
+          <path class="fp f4" d="M540 680 C 540 720, 460 724, 460 780 V 1110 H 490" marker-end="url(#pP)"/>
+          <path class="fp f4" d="M490 1160 C 455 1160, 455 880, 430 880" marker-end="url(#pP)"/>
+          <path class="fp f4" d="M70 376 C 70 290, 80 230, 80 170" marker-end="url(#pP)"/>
+        </g>
+      </svg>
+    </div>
+  </section>
+
+  <!-- ═════════ 8 · What's next + links ═════════ -->
+  <section class="slide" id="s-next">
+    <div class="gridbg"></div>
+    <div class="brand">Scribble<b>Vu</b></div>
+    <img class="scrib sv" src="assets/scrib_cheer.png" alt="">
+    <div class="mf">
+      <div class="ey">NEXT STEPS</div>
+      <div class="mh" id="nextH"><span class="l1">What's next.</span></div>
+      <div class="ncards" id="nsteps">
+        <div class="nc"><div class="ph"><img src="assets/next_today.jpg" alt="A student driving ScribbleVu with a phone in front of a TV"></div><div class="k" style="color:var(--green-ink)">TODAY</div><div class="t">Laptop + phone controller</div><div class="d">A working build, with AI on Oracle Cloud.</div></div>
+        <div class="nc"><div class="ph"><img src="assets/next_pilot.jpg" alt="The ScribbleVu lab as students see it in a headset"></div><div class="k" style="color:var(--blue)">PILOT</div><div class="t">Meta Quest in classrooms</div><div class="d">And homeschool co-ops.</div></div>
+        <div class="nc"><div class="ph goggle">
+          <svg viewBox="0 0 400 250" role="img" aria-label="Sketch of ScribbleVu classroom goggles">
+            <defs><pattern id="bp" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="#3E5BD1" stroke-width="1"/></pattern></defs>
+            <rect width="400" height="250" fill="#2C47B8"/><rect width="400" height="250" fill="url(#bp)" opacity=".5"/>
+            <path d="M92 70 H308 C344 70 360 88 360 124 V146 C360 182 340 196 312 196 H236 C222 196 216 168 200 168 C184 168 178 196 164 196 H88 C60 196 40 182 40 146 V124 C40 88 56 70 92 70 Z" fill="rgba(255,255,255,.08)" stroke="#fff" stroke-width="4"/>
+            <path d="M40 120 C 20 120, 12 112, 6 100 M360 120 C 380 120, 388 112, 394 100" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="128" cy="128" r="30" fill="none" stroke="#9FB2FF" stroke-width="3" stroke-dasharray="6 6"/><circle cx="272" cy="128" r="30" fill="none" stroke="#9FB2FF" stroke-width="3" stroke-dasharray="6 6"/>
+            <path d="M92 222 H308 M92 216 V228 M308 216 V228" stroke="#fff" stroke-width="2"/>
+            <text x="200" y="244" text-anchor="middle" fill="#fff" font-family="Nunito" font-weight="800" font-size="13">SCRIBBLEVU GOGGLES · CONCEPT</text>
+            <text x="200" y="44" text-anchor="middle" fill="#FFE38A" font-family="Caveat" font-weight="700" font-size="30">built for class</text>
+          </svg></div><div class="k" style="color:var(--coral)">SCALE</div><div class="t">Our own goggles</div><div class="d">Affordable classroom VR headsets, locked to learning.</div></div>
+      </div>
+      <div class="links" id="links">
+        <a class="lnk" id="lLiJ" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="#0A66C2"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg>James</a>
+        <a class="lnk" id="lLiF" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="#0A66C2"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg>Fadhil</a>
+        <a class="lnk" id="lMail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>Email us</a>
+        <button class="lnk more" id="seeMore" type="button">See more →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════ 3 · How it works ═════════ -->
+  <section class="slide" id="s-how">
+    <div class="gridbg"></div>
+    <div class="brand">Scribble<b>Vu</b></div>
+    <img class="scrib sv" src="assets/scrib_point.png" alt="">
+    <div class="mf">
+      <div class="ey">HOW IT WORKS</div>
+      <div class="mh" id="howH"><span class="l1">Lesson in. Lab out.</span> <span class="l2">Insight back.</span></div>
+      <div class="steps7" id="steps7">
+        <div class="st7"><div class="th doc"><svg viewBox="0 0 196 110"><rect x="62" y="10" width="72" height="90" rx="6" fill="#fff" stroke="#2B3A67" stroke-width="3"/><path d="M74 30h48M74 42h48M74 54h34M74 66h44" stroke="#C9D3E0" stroke-width="5" stroke-linecap="round"/><circle cx="134" cy="80" r="20" fill="#4F6BED" stroke="#2B3A67" stroke-width="3"/><path d="M134 90V71m-8 8l8-8 8 8" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="tx"><span class="role r-t">TEACHER</span><b><i>1</i>Uploads a lesson</b><p>Any lesson plan PDF.</p></div></div>
+        <div class="st7"><div class="th"><img src="assets/v2_lobby.png" alt=""></div><div class="tx"><span class="role r-a">ORACLE AI</span><b><i>2</i>Builds the lab</b><p>Concepts, challenge, the trap to watch for.</p></div></div>
+        <div class="st7"><div class="th"><img src="assets/v2_bench.png" alt=""></div><div class="tx"><span class="role r-s">STUDENT</span><b><i>3</i>Builds and bets</b><p>Places beads on a wheel, picks a winner.</p></div></div>
+        <div class="st7"><div class="th"><img src="assets/3_lost.png" alt=""></div><div class="tx"><span class="role r-s">STUDENT</span><b><i>4</i>Races and loses</b><p>Most first builds load the rim.</p></div></div>
+        <div class="st7"><div class="th"><img src="assets/5_xray.png" alt=""></div><div class="tx"><span class="role r-s">STUDENT + SCRIBBLE</span><b><i>5</i>Asks why</b><p>The room rebuilds into an X-ray.</p></div></div>
+        <div class="st7"><div class="th"><img src="assets/7_won.png" alt=""></div><div class="tx"><span class="role r-s">STUDENT</span><b><i>6</i>Rebuilds and wins</b><p>Mass at the axle beats the sphere.</p></div></div>
+        <div class="st7"><div class="th"><img src="assets/10_teacher_report.png" alt="" style="object-position:50% 30%"></div><div class="tx"><span class="role r-t">TEACHER</span><b><i>7</i>Sees the class</b><p>Where students got stuck.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════ 6 · For teachers ═════════ -->
+  <section class="slide" id="s-teach">
+    <div class="gridbg"></div>
+    <div class="brand">Scribble<b>Vu</b></div>
+    <img class="scrib sv" src="assets/scrib_wave.png" alt="">
+    <div class="mf">
+    <div class="ey">FOR TEACHERS</div>
+    <div class="mh" id="teachExpH"><span class="l1">Upload it. Run it.</span> <span class="l2">Read what they learned.</span></div>
+    <div class="tcols">
+
+    <!-- 1 · upload -->
+    <div class="tcol" id="tc1">
+      <div class="tk"><b>1</b>BEFORE CLASS</div>
+      <div class="mock">
+        <div class="mbar"><span class="mlogo">Scribble<i>Vu</i></span><span class="mtab on">Upload lesson</span><span class="mtab">Class report</span></div>
+        <div class="drop" id="drop">
+          <svg viewBox="0 0 40 48" width="40" height="48"><path d="M4 2h22l10 10v34H4z" fill="#fff" stroke="#2B3A67" stroke-width="3" stroke-linejoin="round"/><path d="M20 36V20m-7 7l7-7 7 7" fill="none" stroke="#4F6BED" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div class="dt">Drop your lesson plan here</div>
+          <div class="pdf" id="pdf">Unit7_Lesson3.pdf</div>
+          <div class="build" id="build"><div class="bl"><span class="odot"></span>OCI Generative AI is building the lab</div><div class="pb"><i id="pbFill"></i></div></div>
+          <div class="sent" id="sent">✓ Sent to 24 goggles</div>
+        </div>
+      </div>
+      <div class="tcap">Drop in any lesson plan. ScribbleVu builds the lab and sends it to the class.</div>
+    </div>
+
+    <!-- 2 · class report -->
+    <div class="tcol" id="tc2">
+      <div class="tk"><b>2</b>AFTER CLASS</div>
+      <div class="mock">
+        <div class="mbar"><span class="mlogo">Scribble<i>Vu</i></span><span class="mtab">Upload lesson</span><span class="mtab on">Class report</span><span class="msample">SAMPLE CLASS</span></div>
+        <div class="rep">
+          <div class="aip">Summary by OCI Generative AI</div>
+          <div class="rsum">19 of 23 students beat the sphere, in 2.3 builds on average.</div>
+          <div class="rstats"><div><b data-n="23">23</b>students</div><div><b data-n="40">40</b>questions</div><div><b data-n="83">83</b>% beat it</div></div>
+          <div class="rq"><span>Why did my wheel lose?</span><i style="--w:100%"></i><em>9</em></div>
+          <div class="rq"><span>Would a heavier wheel roll faster?</span><i style="--w:67%"></i><em>6</em></div>
+          <div class="rq"><span>Is it the center of gravity?</span><i style="--w:56%"></i><em>5</em></div>
+          <div class="rnote">“Why is it r squared and not just r?” <small>Private question for you</small></div>
+        </div>
+      </div>
+      <div class="tcap">An AI summary of what clicked, what didn't, and the questions students asked privately.</div>
+    </div>
+
+    <!-- 3 · lab library -->
+    <div class="tcol" id="tc3">
+      <div class="tk"><b>3</b>SHARE AND EARN</div>
+      <div class="mock">
+        <div class="mbar"><span class="mlogo">Scribble<i>Vu</i></span><span class="mtab on">Lab library</span><span class="msample">CONCEPT</span></div>
+        <div class="lib">
+          <div class="srch">Search labs by topic, standard, grade</div>
+          <div class="lcards">
+            <div class="lc" style="--c:#A9DCF4"><div class="ic"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="15" fill="none" stroke="#2B3A67" stroke-width="3"/><path d="M20 5v30M5 20h30M9 9l22 22M31 9L9 31" stroke="#2B3A67" stroke-width="2"/><circle cx="20" cy="20" r="4" fill="#F28B66"/></svg></div><b>Fastest Roller</b><span>ScribbleVu</span><em>Free</em></div>
+            <div class="lc" style="--c:#BFE9D2"><div class="ic"><svg viewBox="0 0 40 40"><path d="M6 26h28l-5 7H11z" fill="#fff" stroke="#2B3A67" stroke-width="3" stroke-linejoin="round"/><rect x="17" y="15" width="7" height="11" fill="#F28B66" stroke="#2B3A67" stroke-width="2.5"/></svg></div><b>Float Your Boat</b><span>Mr. Okafor</span><em class="paid">$4</em></div>
+            <div class="lc" style="--c:#FFE38A"><div class="ic"><svg viewBox="0 0 40 40"><rect x="7" y="9" width="26" height="22" rx="3" fill="#fff" stroke="#2B3A67" stroke-width="3"/><path d="M11 21h5l3-6 3 11 3-5h4" fill="none" stroke="#2B3A67" stroke-width="2.5" stroke-linejoin="round"/></svg></div><b>Circuit Escape</b><span>Ms. Chen</span><em class="paid">$3</em></div>
+          </div>
+          <div class="earn" id="earn"><span class="coin">$</span>Teachers who build a lab earn when others use it.</div>
+        </div>
+      </div>
+      <div class="tcap">Like Teachers Pay Teachers, for hands-on labs. Teachers publish what they build; others reuse it.</div>
+    </div>
+    </div>
+    </div>
+  </section>
+
+  <!-- ═════════ More 3 · Sample class ═════════ -->
+  <section class="slide" id="s-teacher">
+    <div class="gridbg"></div>
+    <div class="brand">Scribble<b>Vu</b></div>
+    <div class="tag sample" id="sample6">SAMPLE CLASS DATA</div>
+    <div class="eyebrow">FOR THE TEACHER</div>
+    <div class="h" id="teachH"><span class="l1">Every misconception,</span> <span class="l2">and the fix.</span></div>
+    <div class="card path" id="path">
+      <h3>Student path · Maya R.</h3>
+      <div class="sub">Period 3 Physics · Build the Fastest Roller</div>
+      <div class="attempt" id="att1"><span class="bar" style="background:var(--coral)"></span>
+        <div class="a">Attempt 1 · rim-heavy wheel<small>Guessed 1st</small></div>
+        <div class="res"><small>FINISHED</small>3rd · 5.26 s</div></div>
+      <div class="attempt" id="att2"><span class="bar" style="background:var(--green)"></span>
+        <div class="a">Attempt 2 · axle-heavy wheel<small>Asked “why did my wheel lose?” first</small></div>
+        <div class="res" style="color:var(--green-ink)"><small>FINISHED</small>1st · 4.38 s</div></div>
+      <div class="stamp" id="stamp">MISCONCEPTION CORRECTED</div>
+    </div>
+    <div class="sticky flag" id="flag">
+      <div class="tape"></div>
+      <div class="k">FLAGGED MISCONCEPTION</div>
+      <div class="q">“Mass on the rim builds momentum, so it rolls faster.”</div>
+      <div class="n">15 of 24 first builds loaded the rim.</div>
+    </div>
+    <div class="card prog" id="prog">
+      <div class="pr"><span>Beat the solid sphere</span><span class="v"><span data-n="79">79</span>%</span><span class="bar"><i style="width:79%"></i></span></div>
+      <div class="pr"><span>Explained the energy split</span><span class="v"><span data-n="71">71</span>%</span><span class="bar"><i style="width:71%"></i></span></div>
+      <div class="pr"><span>Asked Scribble a question</span><span class="v"><span data-n="92">92</span>%</span><span class="bar"><i style="width:92%"></i></span></div>
+    </div>
+  </section>
+
+  <!-- ═════════ More 4 · FAQ ═════════ -->
+  <section class="slide" id="s-faq">
+    <div class="gridbg"></div>
+    <div class="brand">Scribble<b>Vu</b></div>
+    <div class="eyebrow">FAQ · HOW SCRIBBLE USES AI</div>
+    <div class="h"><span class="l1">The AI builds the experiment.</span><br><span class="l2">The student does the thinking.</span></div>
+    <div class="grid6" id="grid6" style="top:440px">
+      <div class="card"><div class="n">1</div><h4>Predict before explain</h4><p>Scribble asks for a bet before every race and explains only after.</p></div>
+      <div class="card"><div class="n">2</div><h4>Grounded in the lesson</h4><p>Answers come from the teacher's own curriculum, not the open web.</p></div>
+      <div class="card"><div class="n">3</div><h4>Voice stays on device</h4><p>Whisper transcribes locally. Raw audio is never uploaded.</p></div>
+      <div class="card"><div class="n">4</div><h4>Always labeled AI</h4><p>Students always know Scribble is an AI guide.</p></div>
+      <div class="card"><div class="n">5</div><h4>Trends, not surveillance</h4><p>Teachers see class-level misconceptions to plan the next lesson.</p></div>
+      <div class="card"><div class="n">6</div><h4>Teacher stays in charge</h4><p>They pick the curriculum and see everything that was generated.</p></div>
+    </div>
+  </section>
+
+  <svg id="roller" width="240" height="240" viewBox="-120 -120 240 240">
+    <defs>
+      <radialGradient id="gBig" cx="35%" cy="32%" r="75%"><stop offset="0" stop-color="#FFE1B8"/><stop offset=".35" stop-color="#F4A261"/><stop offset="1" stop-color="#C86A2C"/></radialGradient>
+    </defs>
+    <g id="rollerBall">
+      <circle r="105" fill="url(#gBig)"/>
+      <path d="M-96 -26 Q0 36 96 -26" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="12" stroke-linecap="round"/>
+      <ellipse cx="-34" cy="-42" rx="26" ry="15" fill="#fff" fill-opacity=".6"/>
+    </g>
+  </svg>
+  <div id="grain"></div>
+</div>
+<nav id="nav" aria-label="Slide controls">
+  <button id="bPrev" aria-label="Previous"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+  <div id="hud"></div>
+  <button id="bNext" aria-label="Next"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button>
+  <button id="bFull" aria-label="Fullscreen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+</nav>
+<div id="progress"></div>
+<div id="rotate">Turn your phone sideways for this one</div>
+<div id="hint">Click, or press → to advance</div>
+
+<script src="vendor/gsap.min.js"></script>
+<script>
+(() => {
+  // contact buttons on the last slide; leave one empty to hide its button
+  const LINKS = {
+    linkedinJames: "",
+    linkedinFadhil: "",
+    email: "",
+  };
+  const params = new URLSearchParams(location.search);
+  const STILL = params.has("still");                                     // ?still: final frame, no chrome (link preview image)
+  const CALM = STILL || matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let W = 1920, H = 1080;
+  const stage = document.getElementById("stage");
+  let scale = 1;
+  // ---------- helpers ----------
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const svgNS = "http://www.w3.org/2000/svg";
+  const mk = (tag, attrs, parent) => {
+    const e = document.createElementNS(svgNS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  };
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  // rect of an element in stage pixels, independent of the current fit scale
+  function stageRect(el) {
+    const s = stage.getBoundingClientRect(), r = el.getBoundingClientRect();
+    return { x: (r.left - s.left) / scale, y: (r.top - s.top) / scale, w: r.width / scale, h: r.height / scale };
+  }
+  // wrap every character in a span, keeping words unbreakable
+  function splitChars(el) {
+    const walk = (node) => {
+      [...node.childNodes].forEach((n) => {
+        if (n.nodeType === 3) {
+          const frag = document.createDocumentFragment();
+          n.textContent.split(/(\s+)/).forEach((w) => {
+            if (!w) return;
+            if (/^\s+$/.test(w)) { frag.appendChild(document.createTextNode(" ")); return; }
+            const word = document.createElement("span"); word.className = "word";
+            [...w].forEach((c) => { const s = document.createElement("span"); s.className = "ch"; s.textContent = c; word.appendChild(s); });
+            frag.appendChild(word);
+          });
+          n.replaceWith(frag);
+        } else if (n.nodeType === 1 && n.tagName !== "BR") walk(n);
+      });
+    };
+    walk(el);
+    return $$(".ch", el);
+  }
+  // handwriting-ish entrance for split chars
+  function write(tl, chars, at, opts = {}) {
+    tl.fromTo(chars,
+      { opacity: 0, y: opts.y ?? 28, rotate: () => rnd(-10, 10), filter: "blur(8px)" },
+      { opacity: 1, y: 0, rotate: 0, filter: "blur(0px)", duration: opts.dur ?? .55, ease: "back.out(2)", stagger: opts.stagger ?? .024 },
+      at);
+  }
+  // write a two-line headline: .l1 then .l2
+  function headline(tl, el, at = .15) {
+    const l1 = $(".l1", el), l2 = $(".l2", el);
+    const c1 = l1 ? splitChars(l1) : [], c2 = l2 ? splitChars(l2) : [];
+    write(tl, c1, at);
+    write(tl, c2, at + Math.min(.6, c1.length * .024));
+  }
+  function drawPath(tl, el, at, dur = .8, ease = "power2.inOut") {
+    const len = el.getTotalLength();
+    // hidden until drawn: round caps on a zero-length dash still paint a dot
+    gsap.set(el, { opacity: 0 });
+    tl.set(el, { opacity: 1 }, at);
+    tl.fromTo(el, { strokeDasharray: len, strokeDashoffset: len }, { strokeDashoffset: 0, duration: dur, ease }, at);
+  }
+  // count a number up inside an element; data-d = decimals
+  function countUp(tl, el, to, at, dur = 1.1, dec = 0) {
+    const o = { v: 0 };
+    // the final number is in the HTML; it only reads 0 once the count has actually started
+    tl.fromTo(o, { v: 0 }, { v: to, duration: dur, ease: "power2.out", immediateRender: false, onUpdate: () => el.textContent = o.v.toFixed(dec) }, at);
+  }
+  function common(tl, el) {
+    tl.fromTo($(".gridbg", el), { opacity: 0 }, { opacity: .55, duration: .6 }, 0);
+    const eb = $(".eyebrow", el);
+    if (eb) tl.from(eb, { autoAlpha: 0, x: -20, duration: .5, ease: "power3.out" }, .1);
+    scribIn(tl, el);
+  }
+  function scribIn(tl, el, at = .5) {
+    const sv = $(".sv", el);
+    if (!sv) return;
+    tl.fromTo(sv, { autoAlpha: 0, y: 60, rotate: -20, scale: .5 }, { autoAlpha: 1, y: 0, rotate: 0, scale: 1, duration: .6, ease: "back.out(2)" }, at);
+    tl.to(sv, { rotate: -6, transformOrigin: "50% 100%", duration: .26, yoyo: true, repeat: 3, ease: "sine.inOut" }, at + .6);
+  }
+  // sticky notes keep their CSS tilt; slap them on from above
+  function slap(tl, els, at, stagger = .14) {
+    els.forEach((e, i) => {
+      const m = getComputedStyle(e).transform.match(/matrix\(([^)]+)\)/);
+      const deg = m ? (([a, b]) => Math.atan2(b, a) * 180 / Math.PI)(m[1].split(",").map(Number)) : 0;
+      tl.fromTo(e, { autoAlpha: 0, y: -60, scale: 1.25, rotate: deg + rnd(-10, 10) },
+        { autoAlpha: 1, y: 0, scale: 1, rotate: deg, duration: .5, ease: "back.out(2)" }, at + i * stagger);
+    });
+  }
+
+  // ══════════════════ 1 · ScribbleVu ══════════════════
+  function buildTitle(el) {
+    const tl = gsap.timeline({ paused: true }), stops = [];
+    tl.fromTo($(".gridbg", el), { opacity: 0 }, { opacity: .55, duration: .6 }, 0);
+    const logo = $("#logo", el), lc = splitChars(logo);
+    const lr = stageRect(logo), first = stageRect(lc[0]), last = stageRect(lc[lc.length - 1]);
+    const busy = $("#tBusy", el);
+    gsap.set(busy, { top: lr.y + lr.h * .32 });
+    tl.fromTo("#halo", { opacity: 0, scale: .6 }, { opacity: 1, scale: 1, duration: 1.4, ease: "power2.out" }, .1);
+    // Scribble scribbles the logo into existence, left to right
+    const W0 = .35, WD = lc.length * .07;
+    tl.fromTo(busy, { autoAlpha: 0, x: first.x - 110, scale: .6 }, { autoAlpha: 1, scale: 1, duration: .3, ease: "back.out(2)" }, W0 - .2);
+    tl.to(busy, { x: last.x + last.w - 70, duration: WD, ease: "none" }, W0);
+    tl.to(busy, { rotate: 8, duration: .1, yoyo: true, repeat: Math.round(WD / .1), ease: "sine.inOut" }, W0);
+    tl.fromTo(lc, { opacity: 0, y: 80, scale: .4, rotate: () => rnd(-25, 25) },
+      { opacity: 1, y: 0, scale: 1, rotate: 0, duration: .55, ease: "back.out(2.2)", stagger: .07 }, W0);
+    tl.to(busy, { autoAlpha: 0, scale: .4, y: 40, duration: .3, ease: "back.in(2)" }, W0 + WD + .05);
+    drawPath(tl, $("#swoosh", el), W0 + WD - .2, .6, "power2.out");
+    tl.fromTo(logo, { scale: 1 }, { scale: 1.04, duration: .18, yoyo: true, repeat: 1, ease: "power2.out", transformOrigin: "50% 60%" }, W0 + WD + .1);
+    tl.fromTo("#tagline", { autoAlpha: 0, y: 30 }, { autoAlpha: 1, y: 0, duration: .6, ease: "power3.out" }, W0 + WD + .25);
+    tl.fromTo("#award", { autoAlpha: 0, scale: .7 }, { autoAlpha: 1, scale: 1, duration: .5, ease: "back.out(2.4)" }, W0 + WD + .5);
+    tl.fromTo("#award .star", { rotate: -120, scale: 0 }, { rotate: 0, scale: 1, duration: .6, ease: "back.out(2.5)" }, W0 + WD + .6);
+    tl.fromTo("#tWave", { autoAlpha: 0, y: 120, rotate: -25, scale: .5 }, { autoAlpha: 1, y: 0, rotate: 0, scale: 1, duration: .7, ease: "back.out(2)" }, W0 + WD + .4);
+    tl.to("#tWave", { rotate: -7, transformOrigin: "50% 100%", duration: .28, yoyo: true, repeat: 3, ease: "sine.inOut" }, W0 + WD + 1.1);
+    tl.fromTo("#names", { autoAlpha: 0 }, { autoAlpha: 1, duration: .5 }, W0 + WD + .7);
+    stops.push(tl.duration());
+    return { tl, stops };
+  }
+
+  // a two-line headline plus children that rise in one after another
+  function rise(tl, els, at, stagger = .12) {
+    tl.fromTo(els, { autoAlpha: 0, y: 60 }, { autoAlpha: 1, y: 0, duration: .6, ease: "back.out(1.4)", stagger }, at);
+  }
+
+  // ══════════════════ 2 · The problem ══════════════════
+  function buildProblem(el) {
+    const tl = gsap.timeline({ paused: true }), stops = [];
+    common(tl, el);
+    headline(tl, $("#probH", el));
+    [["#picHome", -2], ["#picLab", 2]].forEach(([id, rot], i) => {
+      tl.fromTo(id, { autoAlpha: 0, y: 100, rotate: rot * 3 }, { autoAlpha: 1, y: 0, rotate: 0, duration: .8, ease: "back.out(1.4)" }, .7 + i * .25);
+      tl.fromTo(`${id} img`, { scale: 1.15 }, { scale: 1, duration: 1.6, ease: "power2.out" }, .7 + i * .25);
+    });
+    tl.fromTo("#probH .hot", { scale: 1 }, { scale: 1.18, duration: .18, yoyo: true, repeat: 1, transformOrigin: "50% 60%" }, 1.4);
+    tl.from("#srcline", { autoAlpha: 0, y: 14, duration: .5 }, 1.5);
+    stops.push(tl.duration());
+    return { tl, stops };
+  }
+
+  // ══════════════════ 3 · Demo video ══════════════════
+  function buildDemo(el) {
+    const tl = gsap.timeline({ paused: true }), stops = [];
+    const wrap = $("#vwrap", el), vid = $("#vid", el), snd = $("#snd", el), prog = $("#vprog2", el);
+    tl.fromTo(wrap, { autoAlpha: 0, scale: .92 }, { autoAlpha: 1, scale: 1, duration: .7, ease: "expo.out" }, 0);
+    tl.fromTo("#vcap", { autoAlpha: 0, y: 20 }, { autoAlpha: 1, y: 0, duration: .5 }, .4);
+    if ($(".vtop", el)) tl.from(".vtop", { autoAlpha: 0, y: -20, duration: .5 }, .1);
+    scribIn(tl, el, .3);
+    stops.push(tl.duration());
+    vid.muted = true;
+    const label = () => { snd.classList.toggle("unmuted", !vid.muted); $("#sndTxt", el).textContent = vid.muted ? "Tap for sound" : "Sound on"; snd.setAttribute("aria-label", vid.muted ? "Turn sound on" : "Turn sound off"); };
+    snd.addEventListener("click", (e) => { e.stopPropagation(); vid.muted = !vid.muted; if (vid.paused) vid.play().catch(() => {}); label(); });
+    wrap.addEventListener("click", (e) => { e.stopPropagation(); vid.paused ? vid.play().catch(() => {}) : vid.pause(); });
+    vid.addEventListener("timeupdate", () => gsap.set(prog, { scaleX: vid.currentTime / (vid.duration || 1) }));
+    label();
+    const toggle = () => (vid.paused ? vid.play().catch(() => {}) : vid.pause());
+    // muted, inline and looping: allowed to start on its own on phones
+    const start = () => {
+      vid.muted = false;
+      vid.play().then(label).catch(() => { vid.muted = true; label(); vid.play().catch(() => {}); });
+    };
+    return { tl, stops, toggle, onBeat: start };
+  }
+
+  // ══════════════════ 3 · How it works ══════════════════
+  function buildHow(el) {
+    const tl = gsap.timeline({ paused: true }), stops = [];
+    common(tl, el);
+    headline(tl, $("#howH", el));
+    const cards = $$("#steps7 .st7", el);
+    cards.forEach((c, i) => {
+      tl.fromTo(c, { autoAlpha: 0, y: 50, scale: .9 }, { autoAlpha: 1, y: 0, scale: 1, duration: .5, ease: "back.out(1.8)" }, .6 + i * .16);
+      tl.from($(".th img, .th svg", c), { scale: 1.3, duration: .8, ease: "power2.out" }, .6 + i * .16);
+    });
+    stops.push(tl.duration());
+    return { tl, stops };
+  }
+
+  // ══════════════════ 5 · Why it works ══════════════════
+  function buildWhy(el) {
+    const tl = gsap.timeline({ paused: true }), stops = [];
+    common(tl, el);
+    headline(tl, $("#whyH", el));
+    rise(tl, $$("#scards .sc", el), .6, .15);
+    $$("#scards [data-n]", el).forEach((n, i) => countUp(tl, n, +n.dataset.n, .65 + i * .15, 1.1, +(n.dataset.d || 0)));
+    tl.fromTo("#jcard", { autoAlpha: 0, x: 60, rotate: 2 }, { autoAlpha: 1, x: 0, rotate: 0, duration: .7, ease: "back.out(1.4)" }, 1.0);
+    tl.from("#jcard img", { filter: "brightness(2) saturate(0) blur(4px)", duration: 1.1, ease: "power2.out" }, 1.2);
+    stops.push(tl.duration());
+    return { tl, stops };
+  }
+
+  // ══════════════════ 7 · Oracle Cloud architecture ══════════════════
+  function buildOracle(el) {
+    const tl = gsap.timeline({ paused: true }), stops = [];
+    common(tl, el);
+    headline(tl, $("#oraH", el));
+    const svg = $(document.body.classList.contains("portrait") ? ".arch.port" : ".arch.land", el);
+    tl.fromTo($$(".bx", svg), { autoAlpha: 0, scale: .94, transformOrigin: "50% 50%" }, { autoAlpha: 1, scale: 1, duration: .45, ease: "back.out(1.6)", stagger: .07 }, .5);
+    // draw each flow in turn so the eye can follow it
+    let t = 1.5;
+    ["f1", "f2", "f3", "f4"].forEach((f) => {
+      $$(`.fp.${f}`, svg).forEach((p, i) => drawPath(tl, p, t + i * .12, .5, "power1.inOut"));
+      t += .55;
+    });
+    tl.from($$(".ax-f", svg), { autoAlpha: 0, duration: .3, stagger: .05 }, t);
+    stops.push(tl.duration());
+    return { tl, stops };
+  }
+
+  // ══════════════════ 8 · What's next + links ══════════════════
+  function buildNext(el) {
+    const tl = gsap.timeline({ paused: true }), stops = [];
+    common(tl, el);
+    headline(tl, $("#nextH", el));
+    rise(tl, $$("#nsteps .nc", el), .45, .16);
+    tl.from($$("#nsteps .ph img, #nsteps .ph svg", el), { scale: 1.2, duration: 1, ease: "power2.out", stagger: .16 }, .45);
+    // fill the buttons from LINKS; a button with no address stays hidden
+    const set = (id, href) => { const a = $(id, el); if (href) a.href = href; else a.hidden = true; };
+    set("#lLiJ", LINKS.linkedinJames); set("#lLiF", LINKS.linkedinFadhil);
+    set("#lMail", LINKS.email && "mailto:" + LINKS.email);
+    $$("#links a", el).forEach((a) => a.addEventListener("click", (e) => e.stopPropagation()));
+    $("#seeMore", el).addEventListener("click", (e) => { e.stopPropagation(); go(MAIN); });
+    rise(tl, $$("#links .lnk:not([hidden])", el), 1.1, .07);
+    stops.push(tl.duration());
+    return { tl, stops };
+  }
+
+  // ══════════════════ 6 · For teachers ══════════════════
+  function buildTeachExp(el) {
+    const tl = gsap.timeline({ paused: true }), stops = [];
+    common(tl, el);
+    headline(tl, $("#teachExpH", el));
+    const col = (id) => $(id, el);
+    gsap.set(["#tc2", "#tc3"], { autoAlpha: 0 });
+    gsap.set(["#build", "#sent"], { autoAlpha: 0, display: "none" });
+    const rise = (id, at) => tl.fromTo(col(id), { autoAlpha: 0, y: 70 }, { autoAlpha: 1, y: 0, duration: .65, ease: "back.out(1.4)" }, at);
+
+    // ── 1 · a PDF drops into the upload box, AI builds, the lab ships
+    rise("#tc1", .7);
+    tl.fromTo("#pdf", { y: -240, rotate: -14, autoAlpha: 0 }, { y: 0, rotate: 0, autoAlpha: 1, duration: .6, ease: "bounce.out" }, 1.2);
+    tl.to("#drop", { borderColor: "#4F6BED", duration: .2 }, 1.6);
+    tl.to(["#drop svg", "#drop .dt", "#pdf"], { autoAlpha: 0, display: "none", duration: .2 }, 2.0);
+    tl.set("#build", { display: "block" }, 2.2);
+    tl.to("#build", { autoAlpha: 1, duration: .25 }, 2.2);
+    tl.fromTo("#pbFill", { scaleX: 0 }, { scaleX: 1, duration: 1.2, ease: "power1.inOut" }, 2.3);
+    tl.set("#sent", { display: "block" }, 3.5);
+    tl.fromTo("#sent", { autoAlpha: 0, scale: .6 }, { autoAlpha: 1, scale: 1, duration: .4, ease: "back.out(3)" }, 3.5);
+    stops.push(tl.duration());
+
+    // ── 2 · the class report writes itself
+    const t2 = tl.duration() + .05;
+    rise("#tc2", t2);
+    tl.from("#tc2 .aip", { autoAlpha: 0, x: -14, duration: .3 }, t2 + .4);
+    write(tl, splitChars($("#tc2 .rsum", el)), t2 + .5, { y: 10, stagger: .012, dur: .35 });
+    $$("#tc2 [data-n]", el).forEach((n, i) => countUp(tl, n, +n.dataset.n, t2 + .9 + i * .1, .9));
+    tl.from($$("#tc2 .rq", el), { autoAlpha: 0, x: -20, duration: .35, stagger: .12 }, t2 + 1.2);
+    $$("#tc2 .rq i", el).forEach((b, i) => tl.fromTo(b, { "--w": "0%" }, { "--w": b.style.getPropertyValue("--w"), duration: .7, ease: "power2.out" }, t2 + 1.3 + i * .12));
+    tl.fromTo("#tc2 .rnote", { autoAlpha: 0, y: -30, rotate: 6 }, { autoAlpha: 1, y: 0, rotate: -1, duration: .45, ease: "back.out(2)" }, t2 + 1.8);
+    stops.push(tl.duration());
+
+    // ── 3 · the lab library: labs drop in, the paid ones pay their makers
+    const t3 = tl.duration() + .05;
+    rise("#tc3", t3);
+    tl.from("#tc3 .srch", { autoAlpha: 0, scaleX: .6, transformOrigin: "0 50%", duration: .4 }, t3 + .4);
+    tl.fromTo($$("#tc3 .lc", el), { autoAlpha: 0, y: -60, rotate: () => rnd(-10, 10) }, { autoAlpha: 1, y: 0, rotate: 0, duration: .5, ease: "back.out(2)", stagger: .14 }, t3 + .55);
+    tl.fromTo($$("#tc3 em.paid", el), { scale: 1 }, { scale: 1.35, duration: .15, yoyo: true, repeat: 1, transformOrigin: "0 50%", stagger: .1 }, t3 + 1.2);
+    tl.fromTo("#earn", { autoAlpha: 0, y: 30 }, { autoAlpha: 1, y: 0, duration: .45, ease: "back.out(2)" }, t3 + 1.3);
+    tl.fromTo("#earn .coin", { rotateY: 0 }, { rotateY: 720, duration: .9, ease: "power2.out" }, t3 + 1.4);
+    stops.push(tl.duration());
+    return { tl, stops };
+  }
+
+  // ══════════════════ 6 · Teacher ══════════════════
+  function buildTeacher(el) {
+    const tl = gsap.timeline({ paused: true }), stops = [];
+    common(tl, el);
+    headline(tl, $("#teachH", el));
+    tl.from("#sample6", { autoAlpha: 0, y: -10, duration: .4 }, .3);
+    tl.fromTo("#path", { autoAlpha: 0, y: 80 }, { autoAlpha: 1, y: 0, duration: .7, ease: "back.out(1.4)" }, .7);
+    ["#att1", "#att2"].forEach((id, i) => {
+      const t = 1.2 + i * .6;
+      tl.from(id, { autoAlpha: 0, x: -40, duration: .5, ease: "power3.out" }, t);
+      tl.from($(".bar", $(id, el)), { scaleY: 0, transformOrigin: "50% 100%", duration: .4 }, t + .1);
+      tl.from($(".res", $(id, el)), { autoAlpha: 0, scale: 1.4, transformOrigin: "100% 50%", duration: .4, ease: "back.out(2)" }, t + .3);
+    });
+    tl.fromTo("#stamp", { autoAlpha: 0, scale: 2.6, rotate: -20 }, { autoAlpha: 1, scale: 1, rotate: -5, duration: .4, ease: "back.out(2)" }, 2.6);
+    gsap.set(["#flag", "#prog"], { autoAlpha: 0 });
+    stops.push(tl.duration());
+
+    const tf = tl.duration() + .05;
+    tl.fromTo("#flag", { autoAlpha: 0, y: -60, scale: 1.2, rotate: 8 }, { autoAlpha: 1, y: 0, scale: 1, rotate: 1.5, duration: .55, ease: "back.out(2)" }, tf);
+    tl.fromTo("#prog", { autoAlpha: 0, y: 60 }, { autoAlpha: 1, y: 0, duration: .6, ease: "back.out(1.4)" }, tf + .3);
+    $$("#prog .pr", el).forEach((r, i) => {
+      tl.fromTo($(".bar i", r), { scaleX: 0 }, { scaleX: 1, transformOrigin: "0 50%", duration: .9, ease: "power3.out" }, tf + .6 + i * .15);
+      const n = $("[data-n]", r); countUp(tl, n, +n.dataset.n, tf + .6 + i * .15, .9);
+    });
+    stops.push(tl.duration());
+    return { tl, stops };
+  }
+
+  function buildTrack(el) {
+    const tl = gsap.timeline({ paused: true }), stops = [];
+    common(tl, el); headline(tl, $(".h", el));
+    tl.fromTo($$("#grid6 .card", el), { autoAlpha: 0, y: 50, scale: .94 }, { autoAlpha: 1, y: 0, scale: 1, duration: .55, ease: "back.out(1.6)", stagger: .09 }, .8);
+    stops.push(tl.duration());
+    return { tl, stops };
+  }
+  // ══════════════════ deck engine ══════════════════
+  // in: how this slide arrives. roll = sphere wipe, lift = new sheet slides up, fade = crossfade
+  // land: a wide-only slide, shown letterboxed on a phone held upright
+  const slides = [
+    { el: $("#s-title"),   build: buildTitle },
+    { el: $("#s-problem"), build: buildProblem, in: "lift" },
+    { el: $("#s-how"),     build: buildHow,     in: "lift" },
+    { el: $("#s-demo"),    build: buildDemo,    in: "fade" },
+    { el: $("#s-why"),     build: buildWhy,     in: "lift" },
+    { el: $("#s-teach"),   build: buildTeachExp, in: "lift" },
+    { el: $("#s-oracle"),  build: buildOracle,  in: "lift" },
+    { el: $("#s-next"),    build: buildNext,    in: "roll" },
+    { el: $("#s-teacher"), build: buildTeacher, in: "lift", more: true, land: true },
+    { el: $("#s-faq"),     build: buildTrack,   in: "lift", more: true, land: true },
+  ];
+  slides.forEach((s) => (s.html = s.el.innerHTML));
+  const MAIN = slides.filter((s) => !s.more).length;
+
+  let cur = -1, run = null, mover = null, transition = null;
+  const hud = $("#hud"), bar = $("#progress");
+  bar.innerHTML = slides.slice(0, MAIN).map(() => "<i></i>").join("");
+
+  // stage shape follows the screen: wide on desktops and turned phones, tall on a phone held upright
+  // visible viewport size; innerWidth can report a wider layout viewport on phones
+  const vw = () => (window.visualViewport ? visualViewport.width : document.documentElement.clientWidth);
+  const vh = () => (window.visualViewport ? visualViewport.height : document.documentElement.clientHeight);
+  const portraitScreen = () => vh() > vw();
+  const dimsFor = (i) => (portraitScreen() && !slides[i].land ? [1080, Math.round(Math.min(2600, Math.max(1700, 1080 * vh() / vw())))] : [1920, 1080]);
+  function fit() {
+    [W, H] = dimsFor(Math.max(cur, 0));
+    document.body.classList.toggle("portrait", W < H);
+    document.body.classList.toggle("landslide", portraitScreen() && cur >= 0 && !!slides[cur].land);
+    stage.style.width = W + "px"; stage.style.height = H + "px";
+    scale = Math.min(vw() / W, vh() / H);
+    stage.style.transform = `translate(${(vw() - W * scale) / 2}px, ${(vh() - H * scale) / 2}px) scale(${scale})`;
+  }
+  let lastShape = null;
+  const onResize = () => {
+    const shape = portraitScreen();
+    fit();
+    // turning the phone changes the layout, so rebuild the slide at its current beat
+    if (lastShape !== null && shape !== lastShape && cur >= 0) enter(cur, true);
+    lastShape = shape;
+  };
+  addEventListener("resize", onResize);
+  window.visualViewport?.addEventListener("resize", onResize);
+
+  function mount(i) {
+    slides.forEach((s, j) => s.el.classList.toggle("on", j === i));
+    const s = slides[i];
+    if (run) run.tl.kill();
+    $$("video", stage).forEach((v) => v.pause());
+    cur = i;
+    fit();
+    s.el.innerHTML = s.html;        // fresh DOM every time: replays never accumulate state
+    gsap.set(s.el, { clearProps: "all" });
+    run = s.build(s.el);
+    run.stops = run.stops.map((t) => Math.min(t, run.tl.duration()));
+    hud.textContent = s.more ? `More ${i - MAIN + 1} / ${slides.length - MAIN}` : `${i + 1} / ${MAIN}`;
+    [...bar.children].forEach((b, j) => b.classList.toggle("on", s.more || j <= i));
+    bar.classList.toggle("more", !!s.more);
+  }
+  function beat(t) { if (run.onBeat) run.onBeat(run.stops.findIndex((s) => Math.abs(s - t) < .02)); }
+  function seekTo(t) { run.tl.seek(t, false); beat(t); }
+  function playTo(t) {
+    if (mover) mover.kill();
+    if (CALM) { seekTo(t); return; }          // reduced motion or a still render: land on the beat
+    mover = run.tl.tweenTo(t, { ease: "none" });
+    beat(t);
+  }
+  function stopIndex() {
+    const t = run.tl.time();
+    let idx = -1;
+    run.stops.forEach((s, i) => { if (t >= s - 0.01) idx = i; });
+    return idx;
+  }
+  function enter(i, atEnd) {
+    if (transition) { transition.progress(1); }
+    mount(i);
+    if (atEnd) seekTo(run.stops[run.stops.length - 1]);
+    else playTo(run.stops[0]);
+  }
+  function next() {
+    if (transition) { transition.progress(1); return; }
+    const t = run.tl.time();
+    const target = run.stops.find((s) => s > t + 0.01);
+    if (mover && mover.isActive()) {         // impatient tap: finish the current beat
+      mover.kill(); mover = null;
+      seekTo(target ?? run.stops[run.stops.length - 1]);
+      return;
+    }
+    if (target !== undefined) { playTo(target); return; }
+    if (cur === MAIN - 1) {                  // end of the story: point at "See more" instead of wandering on
+      gsap.fromTo("#seeMore", { scale: 1 }, { scale: 1.12, duration: .15, yoyo: true, repeat: 3 });
+      return;
+    }
+    if (cur < slides.length - 1) go(cur + 1);
+  }
+  function prev() {
+    if (transition) { transition.progress(1); }
+    if (mover) { mover.kill(); mover = null; }
+    const idx = stopIndex();
+    if (idx > 0) { seekTo(run.stops[idx - 1]); return; }
+    if (cur > 0) enter(cur - 1, true);
+  }
+
+  const roller = $("#roller"), ball = $("#rollerBall");
+  function go(i) {
+    const [w0, h0] = dimsFor(cur), [w1, h1] = dimsFor(i);
+    if (CALM || w0 !== w1 || h0 !== h1) { enter(i, false); return; }   // stage changes shape: just cut
+    const kind = slides[i].in || "fade";
+    const outEl = slides[cur].el, prevRun = run;
+    mount(i);
+    outEl.classList.add("on");
+    const inEl = slides[i].el;
+    run.tl.seek(0);
+    gsap.set(inEl, { zIndex: 5 });
+    const done = () => {
+      outEl.classList.remove("on");
+      gsap.set(outEl, { clearProps: "transform,filter,opacity" });
+      gsap.set(inEl, { clearProps: "clipPath,zIndex,transform,boxShadow,opacity" });
+      gsap.set(roller, { visibility: "hidden" });
+      prevRun.tl.kill();
+      transition = null;
+    };
+    transition = gsap.timeline({ onComplete: done });
+    if (kind === "roll") {
+      // the winning sphere rolls across and drags the next slide in behind it
+      const D = 1.15, p = { x: -140 };
+      gsap.set(roller, { visibility: "visible", x: -240, y: H / 2 - 120 });
+      gsap.set(inEl, { clipPath: "inset(0 100% 0 0)" });
+      transition.to(p, { x: W + 140, duration: D, ease: "power2.inOut", onUpdate: () => {
+        gsap.set(roller, { x: p.x - 120 });
+        gsap.set(ball, { rotation: (p.x / 105) * 180 / Math.PI, svgOrigin: "0 0" });
+        inEl.style.clipPath = `inset(0 ${Math.min(100, Math.max(0, 100 - (p.x / W) * 100))}% 0 0)`;
+      } });
+      transition.fromTo(roller, { scale: .7 }, { scale: 1, duration: D * .5, ease: "power2.out", yoyo: true, repeat: 1 }, 0);
+      transition.to(outEl, { scale: .94, filter: "brightness(.55)", duration: D, ease: "power2.inOut" }, 0);
+      transition.add(() => playTo(run.stops[0]), D * .35);
+    } else if (kind === "lift") {
+      // a fresh sheet of graph paper slides up over the last one
+      const D = .85;
+      transition.fromTo(inEl, { y: H, rotate: 2.5, boxShadow: "0 -30px 60px rgba(20,26,49,.35)" }, { y: 0, rotate: 0, duration: D, ease: "expo.out" }, 0);
+      transition.to(outEl, { scale: .95, filter: "brightness(.7)", duration: D, ease: "power2.out" }, 0);
+      transition.add(() => playTo(run.stops[0]), .2);
+    } else {
+      transition.fromTo(inEl, { opacity: 0 }, { opacity: 1, duration: .3 }, 0);
+      transition.add(() => playTo(run.stops[0]), 0);
+    }
+  }
+
+  addEventListener("keydown", (e) => {
+    if (["ArrowRight", "PageDown", " ", "Enter"].includes(e.key)) { e.preventDefault(); next(); }
+    else if (["ArrowLeft", "PageUp", "Backspace"].includes(e.key)) { e.preventDefault(); prev(); }
+    else if (e.key === "f") fullscreen();
+    else if (e.key === "k" && run.toggle) run.toggle();   // play/pause the demo video
+    else if (e.key === "r") enter(cur, false);
+    else if (e.key === "Home") enter(0, false);
+    else if (/^[1-9]$/.test(e.key) && +e.key <= slides.length) enter(+e.key - 1, false);
+  });
+  stage.addEventListener("click", next);
+  const fullscreen = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.();
+  $("#bPrev").addEventListener("click", prev);
+  $("#bNext").addEventListener("click", next);
+  $("#bFull").addEventListener("click", fullscreen);
+  if (!document.documentElement.requestFullscreen) $("#bFull").hidden = true;   // iPhone Safari has no page fullscreen
+  // swipe on phones and tablets
+  let tx = null, ty = null;
+  addEventListener("touchstart", (e) => { tx = e.touches[0].clientX; ty = e.touches[0].clientY; }, { passive: true });
+  addEventListener("touchend", (e) => {
+    if (tx === null) return;
+    const dx = e.changedTouches[0].clientX - tx, dy = e.changedTouches[0].clientY - ty; tx = null;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) { dx < 0 ? next() : prev(); }
+  });
+  const hint = $("#hint");
+  hint.textContent = matchMedia("(pointer: coarse)").matches ? "Tap or swipe to continue" : "Click, or press → to continue";
+  const hideHint = () => hint.classList.add("gone");
+  setTimeout(hideHint, 5000);
+  addEventListener("keydown", hideHint, { once: true });
+  addEventListener("pointerdown", hideHint, { once: true });
+
+  let idleT;
+  addEventListener("mousemove", () => { document.body.classList.remove("idle"); clearTimeout(idleT); idleT = setTimeout(() => document.body.classList.add("idle"), 2200); });
+
+  window.deck = { next, prev, enter, go, seek: (t) => { if (mover) mover.kill(); mover = null; seekTo(t); },
+    get run() { return run; }, get cur() { return cur; }, get transition() { return transition; } };
+
+  if (STILL) document.body.classList.add("still");
+  const start = Number(params.get("s") || 1) - 1;
+  lastShape = portraitScreen();
+  document.fonts.ready.then(() => enter(Math.min(Math.max(start, 0), slides.length - 1), STILL));
+})();
+</script>
+</body>
+</html>
