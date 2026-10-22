@@ -340,6 +340,11 @@
   body.portrait .st7:nth-child(4)::after { display: block; }
   body.portrait .jcard img { height: auto; aspect-ratio: 577 / 400; }
 
+  .st7 .th.ask { position: relative; display: flex; align-items: flex-end; justify-content: flex-start; padding: 0 0 0 12%; }
+  .st7 .th.ask img { width: auto; height: 82%; object-fit: contain; }
+  .st7 .th.ask .q { position: absolute; right: 8%; top: 16%; max-width: 52%; padding: 8px 12px; border-radius: 14px; background: #fff; box-shadow: 0 0 0 2px #2B3A67;
+    font: 700 22px/1.05 var(--hand); color: #2B3A67; }
+  body.portrait .st7 .th.ask .q { font-size: 24px; }
   /* landscape-only "More" slides shown on a phone held upright */
   #rotate { position: fixed; left: 50%; top: 18px; transform: translateX(-50%); padding: 8px 14px; border-radius: 999px; background: rgba(250,248,243,.95); color: var(--ink);
     font: 800 13px var(--body); z-index: 101; display: none; white-space: nowrap; }
@@ -685,13 +690,13 @@
       <div class="ey">HOW IT WORKS</div>
       <div class="mh" id="howH"><span class="l1">Lesson in. Lab out.</span> <span class="l2">Insight back.</span></div>
       <div class="steps7" id="steps7">
-        <div class="st7"><div class="th doc"><svg viewBox="0 0 196 110"><rect x="62" y="10" width="72" height="90" rx="6" fill="#fff" stroke="#2B3A67" stroke-width="3"/><path d="M74 30h48M74 42h48M74 54h34M74 66h44" stroke="#C9D3E0" stroke-width="5" stroke-linecap="round"/><circle cx="134" cy="80" r="20" fill="#4F6BED" stroke="#2B3A67" stroke-width="3"/><path d="M134 90V71m-8 8l8-8 8 8" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="tx"><span class="role r-t">TEACHER</span><b><i>1</i>Uploads a lesson</b><p>Any lesson plan PDF.</p></div></div>
-        <div class="st7"><div class="th"><img src="assets/v2_lobby.png" alt=""></div><div class="tx"><span class="role r-a">ORACLE AI</span><b><i>2</i>Builds the lab</b><p>Concepts, challenge, the trap to watch for.</p></div></div>
-        <div class="st7"><div class="th"><img src="assets/v2_bench.png" alt=""></div><div class="tx"><span class="role r-s">STUDENT</span><b><i>3</i>Builds and bets</b><p>Places beads on a wheel, picks a winner.</p></div></div>
-        <div class="st7"><div class="th"><img src="assets/3_lost.png" alt=""></div><div class="tx"><span class="role r-s">STUDENT</span><b><i>4</i>Races and loses</b><p>Most first builds load the rim.</p></div></div>
-        <div class="st7"><div class="th"><img src="assets/5_xray.png" alt=""></div><div class="tx"><span class="role r-s">STUDENT + SCRIBBLE</span><b><i>5</i>Asks why</b><p>The room rebuilds into an X-ray.</p></div></div>
-        <div class="st7"><div class="th"><img src="assets/7_won.png" alt=""></div><div class="tx"><span class="role r-s">STUDENT</span><b><i>6</i>Rebuilds and wins</b><p>Mass at the axle beats the sphere.</p></div></div>
-        <div class="st7"><div class="th"><img src="assets/10_teacher_report.png" alt="" style="object-position:50% 30%"></div><div class="tx"><span class="role r-t">TEACHER</span><b><i>7</i>Sees the class</b><p>Where students got stuck.</p></div></div>
+        <div class="st7"><div class="th doc"><svg viewBox="0 0 196 110"><rect x="62" y="10" width="72" height="90" rx="6" fill="#fff" stroke="#2B3A67" stroke-width="3"/><path d="M74 30h48M74 42h48M74 54h34M74 66h44" stroke="#C9D3E0" stroke-width="5" stroke-linecap="round"/><circle cx="134" cy="80" r="20" fill="#4F6BED" stroke="#2B3A67" stroke-width="3"/><path d="M134 90V71m-8 8l8-8 8 8" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="tx"><span class="role r-t">TEACHER</span><b><i>1</i>Uploads a lesson</b><p>Any lesson plan or curriculum.</p></div></div>
+        <div class="st7"><div class="th"><img src="assets/v2_lobby.png" alt=""></div><div class="tx"><span class="role r-a">ORACLE AI</span><b><i>2</i>Generates the lab</b><p>A hands-on lab built from the lesson.</p></div></div>
+        <div class="st7"><div class="th"><img src="assets/v2_bench.png" alt=""></div><div class="tx"><span class="role r-s">STUDENT</span><b><i>3</i>Steps inside</b><p>Builds, tests and experiments.</p></div></div>
+        <div class="st7"><div class="th doc ask"><img src="assets/scrib_think.png" alt=""><span class="q">Why did that happen?</span></div><div class="tx"><span class="role r-s">STUDENT</span><b><i>4</i>Asks anything</b><p>Out loud, in their own words.</p></div></div>
+        <div class="st7"><div class="th"><img src="assets/5_xray.png" alt=""></div><div class="tx"><span class="role r-a">SCRIBBLE + ORACLE AI</span><b><i>5</i>The lab rebuilds</b><p>A custom scene around that question.</p></div></div>
+        <div class="st7"><div class="th"><img src="assets/7_won.png" alt=""></div><div class="tx"><span class="role r-s">STUDENT</span><b><i>6</i>Reaches the goal</b><p>Finishes once they've proven the idea.</p></div></div>
+        <div class="st7"><div class="th"><img src="assets/10_teacher_report.png" alt="" style="object-position:50% 30%"></div><div class="tx"><span class="role r-t">TEACHER</span><b><i>7</i>Sees everything</b><p>Every student's path, questions and progress.</p></div></div>
       </div>
     </div>
   </section>
